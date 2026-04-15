@@ -1,6 +1,10 @@
 import express from 'express';
 import cors from 'cors';
 import Anthropic from '@anthropic-ai/sdk';
+import { readFileSync } from 'fs';
+app.get('/', (req, res) => {
+  res.sendFile('card-scanner.html', { root: '.' });
+});
 
 const app = express();
 const port = process.env.PORT || 3000;
