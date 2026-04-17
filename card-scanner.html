@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Card Scanner">
@@ -18,183 +19,71 @@
     align-items: center;
     padding: 2rem 1rem 3rem;
     color: #1a1a1a;
-  }
-  h1 {
-    font-size: 22px;
-    font-weight: 500;
-    margin-bottom: 0.25rem;
-    color: #1a1a1a;
-  }
-  .subtitle {
-    font-size: 14px;
-    color: #888;
-    margin-bottom: 2rem;
-  }
-  .upload-area {
-    width: 100%;
-    max-width: 420px;
-    border: 1.5px dashed #ccc;
-    border-radius: 16px;
-    background: #fff;
-    padding: 2rem 1.5rem;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
     gap: 1rem;
-    cursor: pointer;
-    transition: border-color 0.2s;
   }
-  .upload-area:active { border-color: #534AB7; }
+  h1 { font-size: 22px; font-weight: 500; color: #1a1a1a; }
+  .subtitle { font-size: 14px; color: #888; margin-bottom: 1rem; }
+  .upload-area {
+    width: 100%; max-width: 420px;
+    border: 1.5px dashed #ccc; border-radius: 16px;
+    background: #fff; padding: 2rem 1.5rem;
+    display: flex; flex-direction: column; align-items: center; gap: 1rem;
+    cursor: pointer;
+  }
   .upload-icon {
-    width: 56px;
-    height: 56px;
-    background: #EEEDFE;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    width: 56px; height: 56px; background: #EEEDFE; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
   }
   .upload-icon svg { width: 28px; height: 28px; }
-  .upload-label {
-    font-size: 15px;
-    font-weight: 500;
-    color: #1a1a1a;
-    text-align: center;
-  }
-  .upload-hint {
-    font-size: 13px;
-    color: #888;
-    text-align: center;
-  }
+  .upload-label { font-size: 15px; font-weight: 500; text-align: center; }
+  .upload-hint { font-size: 13px; color: #888; text-align: center; }
   #file-input { display: none; }
-
   .preview-img {
-    width: 100%;
-    max-width: 420px;
-    border-radius: 12px;
-    object-fit: contain;
-    max-height: 220px;
-    border: 0.5px solid #e0e0e0;
-    background: #fff;
-    display: none;
+    width: 100%; max-width: 420px; border-radius: 12px;
+    max-height: 220px; object-fit: contain;
+    border: 0.5px solid #e0e0e0; background: #fff; display: none;
   }
-
   .scan-btn {
-    width: 100%;
-    max-width: 420px;
-    padding: 14px;
-    background: #534AB7;
-    color: #fff;
-    border: none;
-    border-radius: 12px;
-    font-size: 16px;
-    font-weight: 500;
-    cursor: pointer;
-    display: none;
-    transition: opacity 0.2s;
+    width: 100%; max-width: 420px; padding: 14px;
+    background: #534AB7; color: #fff; border: none; border-radius: 12px;
+    font-size: 16px; font-weight: 500; cursor: pointer; display: none;
   }
-  .scan-btn:active { opacity: 0.85; }
   .scan-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-  .status {
-    font-size: 14px;
-    color: #534AB7;
-    min-height: 20px;
-    text-align: center;
+  .status { font-size: 14px; color: #534AB7; min-height: 20px; text-align: center; }
+  .error-msg {
+    width: 100%; max-width: 420px;
+    background: #FCEBEB; color: #A32D2D;
+    border-radius: 10px; padding: 12px 14px; font-size: 14px; display: none;
   }
-
   .result-card {
-    width: 100%;
-    max-width: 420px;
-    background: #fff;
-    border: 0.5px solid #e0e0e0;
-    border-radius: 16px;
-    padding: 1.25rem;
-    display: none;
-    gap: 0;
+    width: 100%; max-width: 420px; background: #fff;
+    border: 0.5px solid #e0e0e0; border-radius: 16px;
+    padding: 1.25rem; display: none;
   }
-  .result-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 16px;
-  }
+  .result-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
   .avatar {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: #EEEDFE;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 15px;
-    font-weight: 500;
-    color: #534AB7;
-    flex-shrink: 0;
+    width: 48px; height: 48px; border-radius: 50%;
+    background: #EEEDFE; display: flex; align-items: center; justify-content: center;
+    font-size: 15px; font-weight: 500; color: #534AB7; flex-shrink: 0;
   }
-  .result-name { font-size: 17px; font-weight: 500; color: #1a1a1a; }
+  .result-name { font-size: 17px; font-weight: 500; }
   .result-title { font-size: 13px; color: #888; margin-top: 2px; }
   .result-company { font-size: 13px; color: #534AB7; margin-top: 2px; }
   .divider { border: none; border-top: 0.5px solid #eee; margin: 12px 0; }
-  .field-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 7px 0;
-    font-size: 14px;
-  }
+  .field-row { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; font-size: 14px; }
   .field-label { color: #888; flex-shrink: 0; margin-right: 12px; }
   .field-value { color: #1a1a1a; text-align: right; word-break: break-all; }
   .field-value a { color: #534AB7; text-decoration: none; }
-
-  .action-row {
-    display: flex;
-    gap: 10px;
-    margin-top: 16px;
-  }
+  .action-row { display: flex; gap: 10px; margin-top: 16px; }
   .action-btn {
-    flex: 1;
-    padding: 10px;
-    border-radius: 10px;
-    font-size: 14px;
-    font-weight: 500;
-    border: 0.5px solid #e0e0e0;
-    background: #f5f5f0;
-    cursor: pointer;
-    color: #1a1a1a;
-    transition: background 0.15s;
+    flex: 1; padding: 10px; border-radius: 10px; font-size: 14px; font-weight: 500;
+    border: 0.5px solid #e0e0e0; background: #f5f5f0; cursor: pointer; color: #1a1a1a;
   }
-  .action-btn:active { background: #eee; }
-  .action-btn.primary {
-    background: #534AB7;
-    color: #fff;
-    border-color: #534AB7;
-  }
-  .action-btn.primary:active { background: #3C3489; }
-
+  .action-btn.primary { background: #534AB7; color: #fff; border-color: #534AB7; }
   .reset-btn {
-    width: 100%;
-    max-width: 420px;
-    padding: 12px;
-    background: transparent;
-    color: #888;
-    border: 0.5px solid #ddd;
-    border-radius: 12px;
-    font-size: 14px;
-    cursor: pointer;
-    display: none;
-  }
-  .reset-btn:active { background: #f0f0f0; }
-
-  .error-msg {
-    width: 100%;
-    max-width: 420px;
-    background: #FCEBEB;
-    color: #A32D2D;
-    border-radius: 10px;
-    padding: 12px 14px;
-    font-size: 14px;
-    display: none;
+    width: 100%; max-width: 420px; padding: 12px;
+    background: transparent; color: #888; border: 0.5px solid #ddd;
+    border-radius: 12px; font-size: 14px; cursor: pointer; display: none;
   }
 </style>
 </head>
@@ -217,11 +106,8 @@
 </label>
 
 <img id="preview" class="preview-img" alt="Card preview">
-
 <p class="status" id="status"></p>
-
 <button class="scan-btn" id="scan-btn">Scan card</button>
-
 <div class="error-msg" id="error-msg"></div>
 
 <div class="result-card" id="result-card">
@@ -236,8 +122,8 @@
   <hr class="divider">
   <div id="fields"></div>
   <div class="action-row">
-    <button class="action-btn" id="copy-btn" onclick="copyContact()">Copy JSON</button>
-    <button class="action-btn primary" id="vcard-btn" onclick="downloadVCard()">Save contact</button>
+    <button class="action-btn" onclick="copyContact()">Copy JSON</button>
+    <button class="action-btn primary" onclick="downloadVCard()">Save contact</button>
   </div>
 </div>
 
@@ -273,39 +159,54 @@ fileInput.addEventListener('change', () => {
   reader.readAsDataURL(file);
 });
 
+function compressImage(file, maxWidth = 1200) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const scale = Math.min(1, maxWidth / img.width);
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        resolve({ base64: dataUrl.split(',')[1], mediaType: 'image/jpeg' });
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 scanBtn.addEventListener('click', async () => {
   const file = fileInput.files[0];
   if (!file) return;
 
   scanBtn.disabled = true;
-  status.textContent = 'Scanning...';
+  status.textContent = 'Compressing image...';
   errorMsg.style.display = 'none';
 
-  const reader = new FileReader();
-  reader.onload = async e => {
-    const dataUrl = e.target.result;
-    const base64 = dataUrl.split(',')[1];
-    const mediaType = file.type;
+  try {
+    const { base64, mediaType } = await compressImage(file);
+    status.textContent = 'Scanning...';
 
-    try {
-      const res = await fetch(`${API}/read-card`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ base64, mediaType })
-      });
-      if (!res.ok) throw new Error(`Server error ${res.status}`);
-      const data = await res.json();
-      currentData = data;
-      showResult(data);
-    } catch (err) {
-      errorMsg.textContent = 'Error: ' + err.message;
-      errorMsg.style.display = 'block';
-      status.textContent = '';
-    } finally {
-      scanBtn.disabled = false;
-    }
-  };
-  reader.readAsDataURL(file);
+    const res = await fetch(`${API}/read-card`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ base64, mediaType })
+    });
+    if (!res.ok) throw new Error(`Server error ${res.status}`);
+    const data = await res.json();
+    currentData = data;
+    showResult(data);
+  } catch (err) {
+    errorMsg.textContent = 'Error: ' + err.message;
+    errorMsg.style.display = 'block';
+    status.textContent = '';
+  } finally {
+    scanBtn.disabled = false;
+  }
 });
 
 function initials(name) {
@@ -316,7 +217,6 @@ function initials(name) {
 function showResult(d) {
   status.textContent = '';
   scanBtn.style.display = 'none';
-
   document.getElementById('avatar').textContent = initials(d.name);
   document.getElementById('res-name').textContent = d.name || '—';
   document.getElementById('res-title').textContent = d.title || '';
@@ -330,8 +230,7 @@ function showResult(d) {
     fields.push({ label: 'Website', value: `<a href="${url}" target="_blank">${d.website}</a>` });
   }
 
-  const container = document.getElementById('fields');
-  container.innerHTML = fields.map(f =>
+  document.getElementById('fields').innerHTML = fields.map(f =>
     `<div class="field-row"><span class="field-label">${f.label}</span><span class="field-value">${f.value}</span></div>`
   ).join('');
 
@@ -341,9 +240,7 @@ function showResult(d) {
 
 function copyContact() {
   if (!currentData) return;
-  navigator.clipboard.writeText(JSON.stringify(currentData, null, 2))
-    .then(() => { document.getElementById('copy-btn').textContent = 'Copied!'; setTimeout(() => document.getElementById('copy-btn').textContent = 'Copy JSON', 1500); })
-    .catch(() => alert('Copy failed'));
+  navigator.clipboard.writeText(JSON.stringify(currentData, null, 2));
 }
 
 function downloadVCard() {
