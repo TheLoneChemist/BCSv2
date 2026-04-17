@@ -55,3 +55,5 @@ app.post('/read-card', async (req, res) => {
 app.listen(port, () => {
   console.log(`Card scanner API running on port ${port}`);
 });
+
+
