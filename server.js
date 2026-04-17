@@ -1,10 +1,6 @@
 import express from 'express';
 import cors from 'cors';
 import Anthropic from '@anthropic-ai/sdk';
-import { readFileSync } from 'fs';
-app.get('/', (req, res) => {
-  res.sendFile('card-scanner.html', { root: '.' });
-});
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -13,6 +9,10 @@ app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+app.get('/', (req, res) => {
+  res.sendFile('card-scanner.html', { root: '.' });
+});
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
