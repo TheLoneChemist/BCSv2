@@ -47,9 +47,10 @@ app.post('/read-card', async (req, res) => {
     if (s === -1 || e === -1) throw new Error('No JSON in response');
     const parsed = JSON.parse(text.slice(s, e + 1));
     res.json(parsed);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+ } catch (err) {
+  console.error('Error:', err.status, err.message, JSON.stringify(err.error));
+  res.status(500).json({ error: err.message });
+}
 });
 
 app.listen(port, () => {
