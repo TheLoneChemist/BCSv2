@@ -125,6 +125,7 @@
     <button class="action-btn" onclick="copyContact()">Copy JSON</button>
     <button class="action-btn primary" onclick="downloadVCard()">Save contact</button>
   </div>
+  <button class="action-btn" style="width:100%;margin-top:8px;" onclick="findOnLinkedIn()">Find on LinkedIn</button>
 </div>
 
 <button class="reset-btn" id="reset-btn" onclick="reset()">Scan another card</button>
@@ -236,6 +237,12 @@ function showResult(d) {
 
   resultCard.style.display = 'block';
   resetBtn.style.display = 'block';
+}
+
+function findOnLinkedIn() {
+  if (!currentData) return;
+  const query = [currentData.name, currentData.company].filter(Boolean).join(' ');
+  window.open('https://www.linkedin.com/search/results/people/?keywords=' + encodeURIComponent(query), '_blank');
 }
 
 function copyContact() {
