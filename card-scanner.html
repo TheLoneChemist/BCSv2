@@ -149,14 +149,18 @@ fileInput.addEventListener('change', () => {
   if (!file) return;
   const reader = new FileReader();
   reader.onload = e => {
-    preview.src = e.target.result;
-    preview.style.display = 'block';
-    uploadArea.style.display = 'none';
-    scanBtn.style.display = 'block';
-    status.textContent = 'Ready to scan';
-    errorMsg.style.display = 'none';
-    resultCard.style.display = 'none';
-    resetBtn.style.display = 'none';
+    const img = new Image();
+    img.onload = () => {
+      preview.src = e.target.result;
+      preview.style.display = 'block';
+      uploadArea.style.display = 'none';
+      scanBtn.style.display = 'block';
+      status.textContent = 'Ready to scan';
+      errorMsg.style.display = 'none';
+      resultCard.style.display = 'none';
+      resetBtn.style.display = 'none';
+    };
+    img.src = e.target.result;
   };
   reader.readAsDataURL(file);
 });
@@ -226,6 +230,7 @@ scanBtn.addEventListener('click', async () => {
       if (parsed) {
         currentData = parsed;
         showResult(parsed);
+        scanBtn.disabled = false;
         return;
       }
     }
