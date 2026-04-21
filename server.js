@@ -36,7 +36,7 @@ app.post('/read-card', async (req, res) => {
           },
           {
             type: 'text',
-            text: 'This image may be a business card or a QR code containing contact info. Extract all contact information you can find. Reply ONLY with raw JSON — no markdown, no explanation. Keys: name, title, company, email, phone, website. Use empty string for missing fields.'
+            text: 'Extract contact info from this image. Reply ONLY with raw JSON — no markdown, no explanation. Keys: name, title, company, email, phone, website. Use empty string for missing fields.'
           }
         ]
       }]
