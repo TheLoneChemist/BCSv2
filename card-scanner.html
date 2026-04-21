@@ -86,11 +86,12 @@
     border-radius: 12px; font-size: 14px; cursor: pointer; display: none;
   }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 </head>
 <body>
 
 <h1>Card Scanner</h1>
-<p class="subtitle">Scan a business card instantly</p>
+<p class="subtitle">Scan a business card or QR code</p>
 
 <label class="upload-area" id="upload-area" for="file-input">
   <div class="upload-icon">
@@ -101,7 +102,7 @@
     </svg>
   </div>
   <div class="upload-label">Take a photo or choose image</div>
-  <div class="upload-hint">Point camera at a business card</div>
+  <div class="upload-hint">Business card or QR code</div>
   <input type="file" id="file-input" accept="image/*" capture="environment">
 </label>
 
@@ -172,12 +173,40 @@ function compressImage(file, maxWidth = 1200) {
         canvas.height = img.height * scale;
         canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
         const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-        resolve({ base64: dataUrl.split(',')[1], mediaType: 'image/jpeg' });
+        resolve({ base64: dataUrl.split(',')[1], mediaType: 'image/jpeg', canvas, scale });
       };
       img.src = e.target.result;
     };
     reader.readAsDataURL(file);
   });
+}
+
+function tryDecodeQR(canvas) {
+  try {
+    const ctx = canvas.getContext('2d');
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const code = jsQR(imageData.data, imageData.width, imageData.height);
+    return code ? code.data : null;
+  } catch(e) { return null; }
+}
+
+function parseQRText(text) {
+  const result = { name: '', title: '', company: '', email: '', phone: '', website: '' };
+  if (text.startsWith('BEGIN:VCARD')) {
+    text.split(/
+?
+/).forEach(line => {
+      if (line.startsWith('FN:')) result.name = line.slice(3);
+      else if (line.startsWith('ORG:')) result.company = line.slice(4);
+      else if (line.startsWith('TITLE:')) result.title = line.slice(6);
+      else if (line.startsWith('EMAIL')) result.email = line.split(':').slice(1).join(':');
+      else if (line.startsWith('TEL')) result.phone = line.split(':').slice(1).join(':');
+      else if (line.startsWith('URL')) result.website = line.split(':').slice(1).join(':');
+    });
+    return result;
+  }
+  if (text.startsWith('http')) { result.website = text; return result; }
+  return null;
 }
 
 scanBtn.addEventListener('click', async () => {
@@ -189,7 +218,18 @@ scanBtn.addEventListener('click', async () => {
   errorMsg.style.display = 'none';
 
   try {
-    const { base64, mediaType } = await compressImage(file);
+    const { base64, mediaType, canvas } = await compressImage(file);
+
+    const qrText = tryDecodeQR(canvas);
+    if (qrText) {
+      const parsed = parseQRText(qrText);
+      if (parsed) {
+        currentData = parsed;
+        showResult(parsed);
+        return;
+      }
+    }
+
     status.textContent = 'Scanning...';
 
     const res = await fetch(`${API}/read-card`, {
