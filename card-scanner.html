@@ -356,8 +356,23 @@
       <button class="invite-chip" data-para="1" onclick="setParaCount(1)">1 paragraph</button>
       <button class="invite-chip" data-para="2" onclick="setParaCount(2)">2 paragraphs</button>
       <button class="invite-chip active" data-para="3" onclick="setParaCount(3)">3 paragraphs</button>
-      <button class="invite-chip" data-para="4" onclick="setParaCount(4)">4 paragraphs</button>
     </div>
+  </div>
+
+  <div style="margin-top:12px;">
+    <div class="cal-label" style="margin-bottom:7px;">Tone</div>
+    <div class="invite-options" id="tone-chips">
+      <button class="invite-chip active" data-tone="professional" onclick="setTone('professional')">Professional</button>
+      <button class="invite-chip" data-tone="casual" onclick="setTone('casual')">Casual</button>
+      <button class="invite-chip" data-tone="investor" onclick="setTone('investor')">For an investor</button>
+      <button class="invite-chip" data-tone="donor" onclick="setTone('donor')">For a donor</button>
+      <button class="invite-chip" data-tone="other" onclick="setTone('other')">Other…</button>
+    </div>
+    <input type="text" id="tone-other-input" placeholder="Describe the tone…"
+      style="display:none;margin-top:8px;width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:10px 12px;outline:none;transition:border-color 0.15s;"
+      oninput="selectedTone = this.value.trim() || 'other'"
+      onfocus="this.style.borderColor='var(--accent2)'"
+      onblur="this.style.borderColor='var(--border)'">
   </div>
 
   <button class="action-btn wide highlight" id="gen-email-btn" onclick="generateEmailDraft()" style="margin-top:10px;">✨ Generate follow-up email draft</button>
@@ -406,6 +421,7 @@ let pendingBase64 = null;
 let pendingMediaType = null;
 let selectedInvite = 'email';
 let selectedParaCount = 3;
+let selectedTone = 'professional';
 let emailDraftText = '';
 
 const preview = document.getElementById('preview');
@@ -438,6 +454,21 @@ function setParaCount(n) {
   document.querySelectorAll('[data-para]').forEach(c => {
     c.classList.toggle('active', parseInt(c.dataset.para) === n);
   });
+}
+
+function setTone(val) {
+  selectedTone = val;
+  document.querySelectorAll('[data-tone]').forEach(c => {
+    c.classList.toggle('active', c.dataset.tone === val);
+  });
+  const otherInput = document.getElementById('tone-other-input');
+  if (val === 'other') {
+    otherInput.style.display = 'block';
+    otherInput.focus();
+    selectedTone = otherInput.value.trim() || 'other';
+  } else {
+    otherInput.style.display = 'none';
+  }
 }
 
 document.getElementById('modal-use-qr').addEventListener('click', () => {
@@ -709,7 +740,8 @@ async function generateEmailDraft() {
       body: JSON.stringify({
         contact: currentData,
         notes,
-        paragraphs: selectedParaCount
+        paragraphs: selectedParaCount,
+        tone: selectedTone
       })
     });
 
@@ -771,9 +803,16 @@ function reset() {
   selectedFile = null; pendingQRText = null; pendingBase64 = null; pendingMediaType = null;
   emailDraftText = '';
   selectedParaCount = 3;
+  selectedTone = 'professional';
   document.querySelectorAll('[data-para]').forEach(c => {
     c.classList.toggle('active', parseInt(c.dataset.para) === 3);
   });
+  document.querySelectorAll('[data-tone]').forEach(c => {
+    c.classList.toggle('active', c.dataset.tone === 'professional');
+  });
+  const otherInput = document.getElementById('tone-other-input');
+  otherInput.style.display = 'none';
+  otherInput.value = '';
   document.getElementById('file-camera').value = '';
   document.getElementById('file-library').value = '';
   document.getElementById('notes-field').value = '';
