@@ -175,6 +175,53 @@ Rules:
   }
 });
 
+// Generate follow-up email draft from conversation notes
+app.post('/generate-email', async (req, res) => {
+  const { contact, notes, paragraphs } = req.body;
+
+  if (!notes) {
+    return res.status(400).json({ error: 'Missing notes' });
+  }
+
+  const d = contact || {};
+  const firstName = (d.name || '').split(' ')[0] || 'there';
+  const paraCount = parseInt(paragraphs) || 3;
+
+  try {
+    const msg = await client.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 1000,
+      messages: [{
+        role: 'user',
+        content: `Write a warm, professional follow-up email draft.
+
+Contact info:
+- Name: ${d.name || 'Unknown'}
+- Title: ${d.title || ''}
+- Company: ${d.company || ''}
+
+My conversation notes:
+${notes}
+
+Instructions:
+- Address them by first name (${firstName})
+- Reference the conversation naturally
+- Write EXACTLY ${paraCount} paragraph${paraCount > 1 ? 's' : ''} — no more, no fewer
+- End with a clear next step${paraCount === 1 ? ' (work it into the single paragraph)' : ''}
+- Don't use excessive pleasantries or filler
+- Sign off as "Best," then leave a blank line for my name
+- Output ONLY the email body, no subject line, no explanation`
+      }]
+    });
+
+    const text = msg.content.map(b => b.text || '').join('').trim();
+    res.json({ email: text });
+  } catch (err) {
+    console.error('Error:', err.status, err.message, JSON.stringify(err.error));
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.listen(port, () => {
   console.log(`Card scanner API running on port ${port}`);
 });
