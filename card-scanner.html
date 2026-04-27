@@ -397,9 +397,9 @@
   <div style="margin-top:12px;">
     <div class="cal-label" style="margin-bottom:8px;">Send calendar invite to</div>
     <div class="invite-options">
-      <button class="invite-chip active" data-invite="email" onclick="setInvite('email')">Contact's email</button>
+      <button class="invite-chip" data-invite="email" onclick="setInvite('email')">Contact's email</button>
       <button class="invite-chip" data-invite="phone" onclick="setInvite('phone')">Contact's phone</button>
-      <button class="invite-chip" data-invite="none" onclick="setInvite('none')">No invite</button>
+      <button class="invite-chip active" data-invite="none" onclick="setInvite('none')">No invite</button>
     </div>
   </div>
 
@@ -419,7 +419,7 @@ let currentData = null;
 let pendingQRText = null;
 let pendingBase64 = null;
 let pendingMediaType = null;
-let selectedInvite = 'email';
+let selectedInvite = 'none';
 let selectedParaCount = 3;
 let selectedTone = 'professional';
 let emailDraftText = '';
@@ -644,11 +644,12 @@ function showResult(d) {
   const phoneChip = document.querySelector('[data-invite="phone"]');
   if (!d.email) {
     emailChip.style.display = 'none';
-    if (d.phone) setInvite('phone');
-    else setInvite('none');
+    if (d.phone) phoneChip.style.display = '';
+    else phoneChip.style.display = 'none';
+    setInvite('none');
   } else {
     emailChip.style.display = '';
-    setInvite('email');
+    setInvite('none');
   }
   if (!d.phone) phoneChip.style.display = 'none';
   else phoneChip.style.display = '';
@@ -829,7 +830,7 @@ function reset() {
   errorMsg.style.display = 'none';
   status.textContent = '';
   currentData = null;
-  setInvite('email');
+  setInvite('none');
 }
 
 function showToast(msg, duration = 2200) {
