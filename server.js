@@ -177,7 +177,7 @@ Rules:
 
 // Generate follow-up email draft from conversation notes
 app.post('/generate-email', async (req, res) => {
-  const { contact, notes, paragraphs } = req.body;
+  const { contact, notes, paragraphs, tone } = req.body;
 
   if (!notes) {
     return res.status(400).json({ error: 'Missing notes' });
@@ -187,13 +187,21 @@ app.post('/generate-email', async (req, res) => {
   const firstName = (d.name || '').split(' ')[0] || 'there';
   const paraCount = parseInt(paragraphs) || 3;
 
+  const toneMap = {
+    professional: 'professional and polished',
+    casual: 'warm and casual, like writing to someone you already know',
+    investor: 'tailored for an investor — confident, focused on opportunity and traction, concise',
+    donor: 'tailored for a donor — grateful, mission-driven, and relationship-focused',
+  };
+  const toneDesc = toneMap[tone] || (tone && tone !== 'other' ? tone : 'professional and polished');
+
   try {
     const msg = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 1000,
       messages: [{
         role: 'user',
-        content: `Write a warm, professional follow-up email draft.
+        content: `Write a follow-up email draft.
 
 Contact info:
 - Name: ${d.name || 'Unknown'}
@@ -204,6 +212,7 @@ My conversation notes:
 ${notes}
 
 Instructions:
+- Tone: ${toneDesc}
 - Address them by first name (${firstName})
 - Reference the conversation naturally
 - Write EXACTLY ${paraCount} paragraph${paraCount > 1 ? 's' : ''} — no more, no fewer
