@@ -8,118 +8,267 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Card Scanner">
 <title>Card Scanner</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
+  :root {
+    --bg:        #0C0C12;
+    --surface:   #181824;
+    --surface2:  #1f1f2e;
+    --border:    #2a2a3d;
+    --border2:   #353550;
+    --accent:    #5A4FCF;
+    --accent2:   #AFA8FF;
+    --muted:     #9FA3B0;
+    --text:      #F1F1F5;
+    --text2:     #9FA3B0;
+    --danger:    #c06060;
+    --success:   #7ED7C1;
+    --radius:    16px;
+    --radius-sm: 10px;
+  }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    background: #141418;
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
     min-height: 100dvh;
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 2rem 1rem 4rem;
-    color: #e8e8e8;
+    padding: 2rem 1rem 5rem;
+    color: var(--text);
     gap: 1.25rem;
   }
-  h1 { font-size: 28px; font-weight: 600; color: #e8e8e8; }
-  .subtitle { font-size: 17px; color: #666; margin-bottom: 0.5rem; }
+
+  /* Subtle grain texture */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 0; opacity: 0.6;
+  }
+  body > * { position: relative; z-index: 1; }
+
+  h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 30px; font-weight: 400;
+    color: var(--text);
+    letter-spacing: -0.3px;
+  }
+  .subtitle { font-size: 15px; color: var(--muted); margin-bottom: 0.25rem; }
+
+  /* Upload */
   .upload-area {
-    width: 100%; max-width: 420px;
-    border: 1.5px dashed #333; border-radius: 20px;
-    background: #1e1e24; padding: 2.25rem 1.5rem;
-    display: flex; flex-direction: column; align-items: center; gap: 1.1rem;
-    cursor: pointer;
+    width: 100%; max-width: 440px;
+    border: 1.5px dashed var(--border2); border-radius: 20px;
+    background: var(--surface); padding: 2rem 1.5rem;
+    display: flex; flex-direction: column; align-items: center; gap: 1rem;
   }
   .upload-icon {
-    width: 68px; height: 68px; background: #2a2740; border-radius: 50%;
+    width: 64px; height: 64px; background: var(--surface2); border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-  }
-  .upload-icon svg { width: 34px; height: 34px; }
-  .upload-label { font-size: 18px; font-weight: 500; text-align: center; color: #e8e8e8; }
-  .upload-hint { font-size: 15px; color: #666; text-align: center; }
-  #file-input { display: none; }
+    border: 1px solid var(--border);
+  }  .upload-icon svg { width: 30px; height: 30px; }
+  .upload-label { font-size: 17px; font-weight: 500; text-align: center; }
+  .upload-hint { font-size: 14px; color: var(--muted); text-align: center; }
+
   .preview-img {
-    width: 100%; max-width: 420px; border-radius: 14px;
+    width: 100%; max-width: 440px; border-radius: var(--radius);
     max-height: 240px; object-fit: contain;
-    border: 0.5px solid #2a2a32; background: #1e1e24; display: none;
+    border: 1px solid var(--border); background: var(--surface); display: none;
   }
   .scan-btn {
-    width: 100%; max-width: 420px; padding: 18px;
-    background: #6C63D5; color: #fff; border: none; border-radius: 14px;
-    font-size: 19px; font-weight: 600; cursor: pointer; display: none;
-    min-height: 60px;
+    width: 100%; max-width: 440px; padding: 17px;
+    background: var(--accent); color: #F1F1F5; border: none; border-radius: var(--radius);
+    font-size: 17px; font-weight: 600; cursor: pointer; display: none;
+    font-family: 'DM Sans', sans-serif;
+    transition: background 0.18s;
   }
+  .scan-btn:hover { background: var(--accent2); color: #0C0C12; }
   .scan-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-  .status { font-size: 16px; color: #8880CC; min-height: 22px; text-align: center; }
+
+  .status { font-size: 15px; color: var(--accent2); min-height: 20px; text-align: center; }
   .error-msg {
-    width: 100%; max-width: 420px;
-    background: #2d1a1a; color: #e07070;
-    border-radius: 12px; padding: 14px 16px; font-size: 16px; display: none;
+    width: 100%; max-width: 440px;
+    background: #2d1a1a; color: var(--danger);
+    border-radius: var(--radius-sm); padding: 13px 16px; font-size: 15px; display: none;
+    border: 1px solid #4a2020;
   }
 
-  /* QR choice modal */
+  /* Modals */
   .modal-overlay {
     position: fixed; inset: 0;
-    background: rgba(0,0,0,0.75);
+    background: rgba(10,8,6,0.82);
     display: flex; align-items: flex-end; justify-content: center;
     z-index: 100; padding: 1rem;
+    backdrop-filter: blur(4px);
   }
   .modal-overlay.hidden { display: none; }
   .modal-sheet {
-    background: #1e1e24; border-radius: 22px;
-    border: 0.5px solid #2a2a36;
-    width: 100%; max-width: 420px;
-    padding: 1.75rem; display: flex; flex-direction: column; gap: 14px;
+    background: var(--surface); border-radius: 22px;
+    border: 1px solid var(--border);
+    width: 100%; max-width: 440px;
+    padding: 1.75rem; display: flex; flex-direction: column; gap: 12px;
+    max-height: 90dvh; overflow-y: auto;
   }
-  .modal-title { font-size: 20px; font-weight: 700; text-align: center; color: #e8e8e8; }
-  .modal-subtitle { font-size: 15px; color: #666; text-align: center; margin-top: -6px; }
-  .modal-btn {
-    width: 100%; padding: 17px; border-radius: 14px;
-    font-size: 17px; font-weight: 600; cursor: pointer; border: none;
-    min-height: 58px;
-  }
-  .modal-btn.primary { background: #6C63D5; color: #fff; }
-  .modal-btn.secondary { background: #2a2a36; color: #e8e8e8; }
-  .modal-btn.cancel { background: transparent; color: #666; font-size: 16px; min-height: 48px; }
+  .modal-title { font-family: 'DM Serif Display', serif; font-size: 22px; font-weight: 400; text-align: center; }
+  .modal-subtitle { font-size: 14px; color: var(--muted); text-align: center; margin-top: -4px; }
 
+  /* Buttons */
+  .modal-btn, .action-btn, .scan-btn, .reset-btn {
+    font-family: 'DM Sans', sans-serif;
+  }
+  .modal-btn {
+    width: 100%; padding: 15px; border-radius: var(--radius);
+    font-size: 16px; font-weight: 600; cursor: pointer; border: none;
+    min-height: 52px; transition: opacity 0.15s, background 0.15s;
+  }
+  .modal-btn:active { opacity: 0.8; }
+  .modal-btn.primary { background: var(--accent); color: #F1F1F5; }
+  .modal-btn.primary:hover { background: var(--accent2); color: #0C0C12; }
+  .modal-btn.secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .modal-btn.cancel { background: transparent; color: var(--muted); font-size: 15px; min-height: 44px; }
+
+  /* Result card */
   .result-card {
-    width: 100%; max-width: 420px; background: #1e1e24;
-    border: 0.5px solid #2a2a36; border-radius: 20px;
-    padding: 1.5rem; display: none;
+    width: 100%; max-width: 440px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 20px;
+    padding: 1.5rem; display: none; gap: 0;
+    flex-direction: column;
   }
-  .result-header { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+  .result-header { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
   .avatar {
-    width: 58px; height: 58px; border-radius: 50%;
-    background: #2a2740; display: flex; align-items: center; justify-content: center;
-    font-size: 18px; font-weight: 600; color: #9D97E8; flex-shrink: 0;
+    width: 54px; height: 54px; border-radius: 50%;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px; color: var(--accent2); flex-shrink: 0;
   }
-  .result-name { font-size: 20px; font-weight: 600; color: #e8e8e8; }
-  .result-title { font-size: 15px; color: #666; margin-top: 3px; }
-  .result-company { font-size: 15px; color: #8880CC; margin-top: 3px; }
-  .divider { border: none; border-top: 0.5px solid #2a2a36; margin: 14px 0; }
+  .result-name { font-size: 19px; font-weight: 600; }
+  .result-title { font-size: 14px; color: var(--muted); margin-top: 2px; }
+  .result-company { font-size: 14px; color: var(--success); margin-top: 2px; }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
   .field-row {
     display: flex; justify-content: space-between; align-items: center;
-    padding: 10px 0; font-size: 16px;
+    padding: 9px 0; font-size: 15px; border-bottom: 1px solid var(--border);
   }
-  .field-label { color: #666; flex-shrink: 0; margin-right: 12px; font-size: 15px; }
-  .field-value { color: #e8e8e8; text-align: right; word-break: break-all; font-size: 16px; }
-  .field-value a { color: #8880CC; text-decoration: none; }
-  .action-row { display: flex; gap: 12px; margin-top: 18px; }
+  .field-row:last-child { border-bottom: none; }
+  .field-label { color: var(--muted); flex-shrink: 0; margin-right: 12px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .field-value { color: var(--text); text-align: right; word-break: break-all; }
+  .field-value a { color: var(--accent2); text-decoration: none; }
+
+  .action-row { display: flex; gap: 10px; margin-top: 16px; }
   .action-btn {
-    flex: 1; padding: 14px 10px; border-radius: 12px; font-size: 16px; font-weight: 600;
-    border: 0.5px solid #2a2a36; background: #2a2a36; cursor: pointer; color: #e8e8e8;
-    min-height: 54px;
+    flex: 1; padding: 13px 10px; border-radius: var(--radius-sm);
+    font-size: 15px; font-weight: 600;
+    border: 1px solid var(--border); background: var(--surface2);
+    cursor: pointer; color: var(--text); min-height: 50px;
+    transition: background 0.15s, border-color 0.15s;
   }
-  .action-btn.primary { background: #6C63D5; color: #fff; border-color: #6C63D5; }
-  .action-btn.wide {
-    width: 100%; margin-top: 10px; flex: unset;
-  }
+  .action-btn:hover { background: var(--border); }
+  .action-btn.primary { background: var(--accent); color: #F1F1F5; border-color: var(--accent); }
+  .action-btn.primary:hover { background: var(--accent2); color: #0C0C12; }
+  .action-btn.wide { width: 100%; margin-top: 8px; flex: unset; }
+  .action-btn.highlight { background: var(--surface2); border-color: var(--accent2); color: var(--accent2); }
+  .action-btn.highlight:hover { background: var(--border); }
+
   .reset-btn {
-    width: 100%; max-width: 420px; padding: 15px;
-    background: transparent; color: #555; border: 0.5px solid #2a2a36;
-    border-radius: 14px; font-size: 16px; cursor: pointer; display: none;
-    min-height: 54px;
+    width: 100%; max-width: 440px; padding: 14px;
+    background: transparent; color: var(--muted);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    font-size: 15px; cursor: pointer; display: none; min-height: 50px;
+    transition: border-color 0.15s, color 0.15s;
   }
+  .reset-btn:hover { border-color: var(--border2); color: var(--text2); }
+
+  /* Notes & Follow-up section inside result card */
+  .section-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 17px; font-weight: 400;
+    color: var(--text2); margin: 14px 0 8px;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .section-title svg { width: 16px; height: 16px; }
+
+  textarea.notes-field {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); color: var(--text); font-family: 'DM Sans', sans-serif;
+    font-size: 14px; padding: 12px; resize: vertical; min-height: 88px;
+    outline: none; transition: border-color 0.15s;
+    line-height: 1.55;
+  }
+  textarea.notes-field::placeholder { color: var(--muted); }
+  textarea.notes-field:focus { border-color: var(--accent); }
+
+  /* Calendar section */
+  .cal-row {
+    display: flex; gap: 10px; margin-top: 4px;
+  }
+  .cal-field {
+    flex: 1; display: flex; flex-direction: column; gap: 5px;
+  }
+  .cal-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+  input[type="date"], input[type="time"] {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); color: var(--text);
+    font-family: 'DM Sans', sans-serif; font-size: 14px;
+    padding: 10px 12px; width: 100%; outline: none;
+    transition: border-color 0.15s;
+    color-scheme: dark;
+  }
+  input[type="date"]:focus, input[type="time"]:focus { border-color: var(--accent); }
+
+  /* Invite toggle */
+  .invite-options { display: flex; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
+  .invite-chip {
+    padding: 7px 14px; border-radius: 20px; font-size: 13px; font-weight: 500;
+    border: 1px solid var(--border); background: var(--surface2);
+    cursor: pointer; color: var(--text2); transition: all 0.15s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .invite-chip.active { background: var(--accent); color: #F1F1F5; border-color: var(--accent); font-weight: 600; }
+  .invite-chip:hover:not(.active) { border-color: var(--border2); }
+
+  /* Email draft modal */
+  .email-draft {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 14px;
+    font-size: 14px; color: var(--text2); line-height: 1.6;
+    white-space: pre-wrap; max-height: 280px; overflow-y: auto;
+    margin-top: 6px;
+  }
+  .generating-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 13px; color: var(--accent2); padding: 4px 0;
+  }
+  .dot-spin {
+    width: 8px; height: 8px; border-radius: 50%;
+    border: 2px solid var(--accent2);
+    border-top-color: transparent;
+    animation: spin 0.7s linear infinite;
+    display: inline-block;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--surface2); color: var(--text);
+    border: 1px solid var(--border2); border-radius: 30px;
+    padding: 10px 20px; font-size: 14px; opacity: 0;
+    transition: opacity 0.25s, transform 0.25s;
+    z-index: 200; white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* Section separator */
+  .section-sep {
+    border: none; border-top: 1px solid var(--border);
+    margin: 16px 0 4px;
+  }
+
+  /* Success color override for calendar button after creation */
+  .cal-created { border-color: var(--success) !important; color: var(--success) !important; background: transparent !important; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 </head>
@@ -130,17 +279,17 @@
 
 <div class="upload-area" id="upload-area">
   <div class="upload-icon">
-    <svg viewBox="0 0 24 24" fill="none" stroke="#8880CC" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#AFA8FF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
       <rect x="3" y="3" width="18" height="18" rx="3"/>
       <circle cx="8.5" cy="8.5" r="1.5"/>
       <polyline points="21 15 16 10 5 21"/>
     </svg>
   </div>
-  <div class="upload-label">Tap to select an image</div>
+  <div class="upload-label">Select a card image</div>
   <div class="upload-hint">Business card or QR code</div>
-  <div style="display:flex;gap:12px;margin-top:6px;width:100%;">
-    <button class="action-btn" style="flex:1;" onclick="document.getElementById('file-camera').click()">Take photo</button>
-    <button class="action-btn" style="flex:1;" onclick="document.getElementById('file-library').click()">Choose image</button>
+  <div style="display:flex;gap:10px;margin-top:6px;width:100%;">
+    <button class="action-btn" style="flex:1;" onclick="document.getElementById('file-camera').click()">📷 Take photo</button>
+    <button class="action-btn" style="flex:1;" onclick="document.getElementById('file-library').click()">🖼 Choose image</button>
   </div>
   <input type="file" id="file-camera" accept="image/*" capture="environment" style="display:none">
   <input type="file" id="file-library" accept="image/*" style="display:none">
@@ -162,6 +311,18 @@
   </div>
 </div>
 
+<!-- Email draft modal -->
+<div class="modal-overlay hidden" id="email-modal">
+  <div class="modal-sheet">
+    <div class="modal-title">✉️ Suggested Follow-up</div>
+    <div class="modal-subtitle">Generated from your conversation notes</div>
+    <div class="email-draft" id="email-draft-content"></div>
+    <button class="modal-btn primary" onclick="copyEmailDraft()">Copy email draft</button>
+    <button class="modal-btn cancel" onclick="document.getElementById('email-modal').classList.add('hidden')">Close</button>
+  </div>
+</div>
+
+<!-- Result card -->
 <div class="result-card" id="result-card">
   <div class="result-header">
     <div class="avatar" id="avatar">?</div>
@@ -173,14 +334,69 @@
   </div>
   <hr class="divider">
   <div id="fields"></div>
+
+  <!-- Actions -->
   <div class="action-row">
     <button class="action-btn" onclick="copyContact()">Copy JSON</button>
     <button class="action-btn primary" onclick="downloadVCard()">Save contact</button>
   </div>
   <button class="action-btn wide" onclick="findOnLinkedIn()">Find on LinkedIn</button>
+
+  <!-- Notes -->
+  <hr class="section-sep">
+  <div class="section-title">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+    Conversation notes
+  </div>
+  <textarea class="notes-field" id="notes-field" placeholder="What did you talk about? Any key takeaways, promises, or context…"></textarea>
+
+  <div style="margin-top:10px;">
+    <div class="cal-label" style="margin-bottom:7px;">Email length</div>
+    <div class="invite-options">
+      <button class="invite-chip" data-para="1" onclick="setParaCount(1)">1 paragraph</button>
+      <button class="invite-chip" data-para="2" onclick="setParaCount(2)">2 paragraphs</button>
+      <button class="invite-chip active" data-para="3" onclick="setParaCount(3)">3 paragraphs</button>
+      <button class="invite-chip" data-para="4" onclick="setParaCount(4)">4 paragraphs</button>
+    </div>
+  </div>
+
+  <button class="action-btn wide highlight" id="gen-email-btn" onclick="generateEmailDraft()" style="margin-top:10px;">✨ Generate follow-up email draft</button>
+
+  <!-- Calendar / Follow-up -->
+  <hr class="section-sep">
+  <div class="section-title">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    Follow-up reminder
+  </div>
+  <div class="cal-row">
+    <div class="cal-field">
+      <div class="cal-label">Date</div>
+      <input type="date" id="cal-date">
+    </div>
+    <div class="cal-field">
+      <div class="cal-label">Time</div>
+      <input type="time" id="cal-time" value="13:00">
+    </div>
+  </div>
+
+  <div style="margin-top:12px;">
+    <div class="cal-label" style="margin-bottom:8px;">Send calendar invite to</div>
+    <div class="invite-options">
+      <button class="invite-chip active" data-invite="email" onclick="setInvite('email')">Contact's email</button>
+      <button class="invite-chip" data-invite="phone" onclick="setInvite('phone')">Contact's phone</button>
+      <button class="invite-chip" data-invite="none" onclick="setInvite('none')">No invite</button>
+    </div>
+  </div>
+
+  <button class="action-btn wide primary" id="cal-btn" onclick="createCalendarEvent()" style="margin-top:12px;">
+    📅 Add to calendar
+  </button>
 </div>
 
 <button class="reset-btn" id="reset-btn" onclick="reset()">Scan another card</button>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
 
 <script>
 const API = 'https://bcsv2-production.up.railway.app';
@@ -188,6 +404,9 @@ let currentData = null;
 let pendingQRText = null;
 let pendingBase64 = null;
 let pendingMediaType = null;
+let selectedInvite = 'email';
+let selectedParaCount = 3;
+let emailDraftText = '';
 
 const preview = document.getElementById('preview');
 const scanBtn = document.getElementById('scan-btn');
@@ -199,16 +418,34 @@ const uploadArea = document.getElementById('upload-area');
 const qrModal = document.getElementById('qr-modal');
 let selectedFile = null;
 
+// Set default date to tomorrow
+function setDefaultDate() {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  const iso = d.toISOString().split('T')[0];
+  document.getElementById('cal-date').value = iso;
+}
+
+function setInvite(val) {
+  selectedInvite = val;
+  document.querySelectorAll('.invite-chip').forEach(c => {
+    c.classList.toggle('active', c.dataset.invite === val);
+  });
+}
+
+function setParaCount(n) {
+  selectedParaCount = n;
+  document.querySelectorAll('[data-para]').forEach(c => {
+    c.classList.toggle('active', parseInt(c.dataset.para) === n);
+  });
+}
+
 document.getElementById('modal-use-qr').addEventListener('click', () => {
   hideModal();
   if (!pendingQRText) return;
   const parsed = parseQRText(pendingQRText);
-  if (parsed) {
-    currentData = parsed;
-    showResult(parsed);
-  } else {
-    showError('Could not extract contact info from QR code.');
-  }
+  if (parsed) { currentData = parsed; showResult(parsed); }
+  else showError('Could not extract contact info from QR code.');
   scanBtn.disabled = false;
 });
 
@@ -299,7 +536,7 @@ function parseQRText(text) {
 }
 
 async function scanViaAPI(base64, mediaType) {
-  status.textContent = 'Scanning...';
+  status.textContent = 'Scanning…';
   try {
     const res = await fetch(`${API}/read-card`, {
       method: 'POST',
@@ -324,16 +561,13 @@ function showError(msg) {
 scanBtn.addEventListener('click', async () => {
   const file = selectedFile;
   if (!file) return;
-
   scanBtn.disabled = true;
-  status.textContent = 'Compressing image...';
+  status.textContent = 'Compressing image…';
   errorMsg.style.display = 'none';
-
   try {
     const { base64, mediaType, canvas } = await compressImage(file);
     pendingBase64 = base64;
     pendingMediaType = mediaType;
-
     const qrText = tryDecodeQR(canvas);
     if (qrText) {
       pendingQRText = qrText;
@@ -341,14 +575,11 @@ scanBtn.addEventListener('click', async () => {
       showModal();
       return;
     }
-
     await scanViaAPI(base64, mediaType);
   } catch (err) {
     showError('Error: ' + err.message);
   } finally {
-    if (qrModal.classList.contains('hidden')) {
-      scanBtn.disabled = false;
-    }
+    if (qrModal.classList.contains('hidden')) scanBtn.disabled = false;
   }
 });
 
@@ -377,10 +608,153 @@ function showResult(d) {
     `<div class="field-row"><span class="field-label">${f.label}</span><span class="field-value">${f.value}</span></div>`
   ).join('');
 
-  resultCard.style.display = 'block';
+  // Update invite chip availability based on what contact info exists
+  const emailChip = document.querySelector('[data-invite="email"]');
+  const phoneChip = document.querySelector('[data-invite="phone"]');
+  if (!d.email) {
+    emailChip.style.display = 'none';
+    if (d.phone) setInvite('phone');
+    else setInvite('none');
+  } else {
+    emailChip.style.display = '';
+    setInvite('email');
+  }
+  if (!d.phone) phoneChip.style.display = 'none';
+  else phoneChip.style.display = '';
+
+  setDefaultDate();
+  resultCard.style.display = 'flex';
+  resultCard.style.flexDirection = 'column';
   resetBtn.style.display = 'block';
 }
 
+/* ─── Calendar ─────────────────────────────────────── */
+function createCalendarEvent() {
+  if (!currentData) return;
+  const name = currentData.name || 'Contact';
+  const title = `Follow up with ${name}`;
+  const dateVal = document.getElementById('cal-date').value;
+  const timeVal = document.getElementById('cal-time').value || '13:00';
+
+  if (!dateVal) { showToast('Please pick a date first'); return; }
+
+  // Build start/end ISO strings (1 hour duration)
+  const start = new Date(`${dateVal}T${timeVal}:00`);
+  const end = new Date(start.getTime() + 60 * 60 * 1000);
+
+  const fmt = d => d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+  const startStr = fmt(start);
+  const endStr = fmt(end);
+
+  const notes = document.getElementById('notes-field').value.trim();
+  let description = notes ? `Conversation notes:\n${notes}` : '';
+  if (emailDraftText) description += (description ? '\n\n' : '') + `Suggested follow-up email:\n${emailDraftText}`;
+
+  // Determine attendee for invite
+  let attendee = '';
+  if (selectedInvite === 'email' && currentData.email) {
+    attendee = `\nATTENDEE;RSVP=TRUE:mailto:${currentData.email}`;
+  } else if (selectedInvite === 'phone' && currentData.phone) {
+    // SMS invite hint in description
+    description += `\n\nInvite SMS to: ${currentData.phone}`;
+  }
+
+  const ics = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Card Scanner//EN',
+    'BEGIN:VEVENT',
+    `DTSTART:${startStr}`,
+    `DTEND:${endStr}`,
+    `SUMMARY:${title}`,
+    description ? `DESCRIPTION:${description.replace(/\n/g, '\\n')}` : '',
+    attendee,
+    'END:VEVENT',
+    'END:VCALENDAR'
+  ].filter(Boolean).join('\r\n');
+
+  const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${title.replace(/\s+/g, '_')}.ics`;
+  a.click();
+  URL.revokeObjectURL(url);
+
+  // Visual feedback
+  const btn = document.getElementById('cal-btn');
+  btn.textContent = '✅ Calendar event saved';
+  btn.classList.remove('primary');
+  btn.classList.add('cal-created');
+  showToast('Calendar event downloaded');
+}
+
+/* ─── Email Draft ───────────────────────────────────── */
+async function generateEmailDraft() {
+  const notes = document.getElementById('notes-field').value.trim();
+  const btn = document.getElementById('gen-email-btn');
+
+  if (!notes) {
+    showToast('Add some conversation notes first');
+    return;
+  }
+
+  const d = currentData || {};
+  const firstName = (d.name || '').split(' ')[0] || 'there';
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="dot-spin"></span> Generating…';
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: `Write a warm, professional follow-up email draft.
+
+Contact info:
+- Name: ${d.name || 'Unknown'}
+- Title: ${d.title || ''}
+- Company: ${d.company || ''}
+
+My conversation notes:
+${notes}
+
+Instructions:
+- Address them by first name (${firstName})
+- Reference the conversation naturally
+- Write EXACTLY ${selectedParaCount} paragraph${selectedParaCount > 1 ? 's' : ''} — no more, no fewer
+- End with a clear next step${selectedParaCount === 1 ? ' (work it into the single paragraph)' : ''}
+- Don't use excessive pleasantries or filler
+- Sign off as "Best," then leave a blank line for my name
+- Output ONLY the email body, no subject line, no explanation`
+        }]
+      })
+    });
+
+    const data = await res.json();
+    emailDraftText = (data.content || []).map(b => b.text || '').join('').trim();
+    document.getElementById('email-draft-content').textContent = emailDraftText;
+    document.getElementById('email-modal').classList.remove('hidden');
+  } catch (err) {
+    showToast('Could not generate email: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '✨ Generate follow-up email draft';
+  }
+}
+
+function copyEmailDraft() {
+  if (!emailDraftText) return;
+  navigator.clipboard.writeText(emailDraftText);
+  showToast('Email draft copied!');
+}
+
+/* ─── Misc ──────────────────────────────────────────── */
 function findOnLinkedIn() {
   if (!currentData) return;
   const query = [currentData.name, currentData.company].filter(Boolean).join(' ');
@@ -390,6 +764,7 @@ function findOnLinkedIn() {
 function copyContact() {
   if (!currentData) return;
   navigator.clipboard.writeText(JSON.stringify(currentData, null, 2));
+  showToast('Copied to clipboard');
 }
 
 function downloadVCard() {
@@ -409,19 +784,25 @@ function downloadVCard() {
   const blob = new Blob([lines], { type: 'text/vcard' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url;
-  a.download = `${(d.name || 'contact').replace(/\s+/g, '_')}.vcf`;
-  a.click();
-  URL.revokeObjectURL(url);
+  a.href = url; a.download = `${(d.name || 'contact').replace(/\s+/g, '_')}.vcf`;
+  a.click(); URL.revokeObjectURL(url);
 }
 
 function reset() {
-  selectedFile = null;
-  pendingQRText = null;
-  pendingBase64 = null;
-  pendingMediaType = null;
+  selectedFile = null; pendingQRText = null; pendingBase64 = null; pendingMediaType = null;
+  emailDraftText = '';
+  selectedParaCount = 3;
+  document.querySelectorAll('[data-para]').forEach(c => {
+    c.classList.toggle('active', parseInt(c.dataset.para) === 3);
+  });
   document.getElementById('file-camera').value = '';
   document.getElementById('file-library').value = '';
+  document.getElementById('notes-field').value = '';
+  document.getElementById('gen-email-btn').innerHTML = '✨ Generate follow-up email draft';
+  document.getElementById('gen-email-btn').disabled = false;
+  const calBtn = document.getElementById('cal-btn');
+  calBtn.textContent = '📅 Add to calendar';
+  calBtn.classList.add('primary'); calBtn.classList.remove('cal-created');
   preview.style.display = 'none';
   uploadArea.style.display = 'flex';
   scanBtn.style.display = 'none';
@@ -430,6 +811,14 @@ function reset() {
   errorMsg.style.display = 'none';
   status.textContent = '';
   currentData = null;
+  setInvite('email');
+}
+
+function showToast(msg, duration = 2200) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration);
 }
 </script>
 </body>
