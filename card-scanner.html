@@ -782,6 +782,7 @@ function copyContact() {
 function downloadVCard() {
   if (!currentData) return;
   const d = currentData;
+  const notes = document.getElementById('notes-field').value.trim();
   const lines = [
     'BEGIN:VCARD', 'VERSION:3.0',
     `FN:${d.name || ''}`,
@@ -790,6 +791,7 @@ function downloadVCard() {
     d.email ? `EMAIL:${d.email}` : '',
     d.phone ? `TEL:${d.phone}` : '',
     d.website ? `URL:${d.website.startsWith('http') ? d.website : 'https://' + d.website}` : '',
+    notes ? `NOTE:${notes.replace(/\n/g, '\\n')}` : '',
     'END:VCARD'
   ].filter(Boolean).join('\r\n');
 
