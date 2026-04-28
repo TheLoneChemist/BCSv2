@@ -1,4 +1,4 @@
-<!-- card-scanner v1.3.0 -->
+<!-- card-scanner v1.5.0 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -12,11 +12,11 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg:        #321A55;
-    --surface:   #3d2163;
-    --surface2:  #482870;
-    --border:    #5a3888;
-    --border2:   #6a489a;
+    --bg:        #2D1B4E;
+    --surface:   #38215e;
+    --surface2:  #42286c;
+    --border:    #543580;
+    --border2:   #644592;
     --accent:    #5A4FCF;
     --accent2:   #AFA8FF;
     --muted:     #9FA3B0;
@@ -361,7 +361,15 @@
   </div>
   <textarea class="notes-field" id="notes-field" placeholder="What did you talk about? Any key takeaways, promises, or context…"></textarea>
 
-  <div style="margin-top:10px;">
+  <!-- Email draft -->
+  <hr class="section-sep">
+  <div class="section-title">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+    Would you like a follow-up email drafted?
+  </div>
+  <p style="font-size:13px; color:var(--text2); margin: -4px 0 12px; line-height:1.5;">Choose a length and tone, then tap generate. Your conversation notes will be used to personalize it.</p>
+
+  <div>
     <div class="cal-label" style="margin-bottom:7px;">Email length</div>
     <div class="invite-options">
       <button class="invite-chip" data-para="1" onclick="setParaCount(1)">1 paragraph</button>
@@ -386,7 +394,7 @@
       onblur="this.style.borderColor='var(--border)'">
   </div>
 
-  <button class="action-btn wide highlight" id="gen-email-btn" onclick="generateEmailDraft()" style="margin-top:10px;">✨ Generate follow-up email draft</button>
+  <button class="action-btn wide highlight" id="gen-email-btn" onclick="generateEmailDraft()" style="margin-top:10px;">✨ Generate follow-up email</button>
 
   <!-- Calendar / Follow-up -->
   <hr class="section-sep">
