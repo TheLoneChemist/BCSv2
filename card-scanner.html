@@ -1,4 +1,4 @@
-<!-- card-scanner v1.10.0 -->
+<!-- card-scanner v1.12.0 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -170,8 +170,8 @@
   .action-btn.primary { background: var(--accent); color: #F1F1F5; border-color: var(--accent); }
   .action-btn.primary:hover { background: var(--accent2); color: #0C0C12; }
   .action-btn.wide { width: 100%; margin-top: 8px; flex: unset; }
-  .action-btn.highlight { background: var(--surface2); border-color: var(--accent2); color: var(--accent2); }
-  .action-btn.highlight:hover { background: var(--border); }
+  .action-btn.highlight { background: var(--accent); color: #F1F1F5; border-color: var(--accent); }
+  .action-btn.highlight:hover { background: var(--accent2); color: #0C0C12; }
 
   .reset-btn {
     width: 100%; max-width: 440px; padding: 14px;
@@ -431,12 +431,17 @@
   </div>
 
   <div style="margin-top:12px;">
-    <div class="cal-label" style="margin-bottom:8px;" id="invite-label">Would you like to send a calendar invite as well?</div>
+    <div class="cal-label" style="margin-bottom:8px;" id="invite-label">Would you like to send a calendar invite as well, or to another team member?</div>
     <div class="invite-options">
       <button class="invite-chip active" data-invite="none" onclick="setInvite('none')">No</button>
       <button class="invite-chip" data-invite="phone" onclick="setInvite('phone')">Phone</button>
       <button class="invite-chip" data-invite="email" onclick="setInvite('email')">E-mail</button>
+      <button class="invite-chip" data-invite="other" onclick="setInvite('other')">Other…</button>
     </div>
+    <input type="text" id="invite-other-input" placeholder="Enter email or phone number…"
+      style="display:none;margin-top:8px;width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:10px 12px;outline:none;transition:border-color 0.15s;"
+      onfocus="this.style.borderColor='var(--accent2)'"
+      onblur="this.style.borderColor='var(--border)'">
   </div>
 
   <button class="action-btn wide primary" id="cal-btn" onclick="createCalendarEvent()" style="margin-top:12px;">
@@ -490,6 +495,13 @@ function setInvite(val) {
   document.querySelectorAll('.invite-chip').forEach(c => {
     c.classList.toggle('active', c.dataset.invite === val);
   });
+  const otherInput = document.getElementById('invite-other-input');
+  if (val === 'other') {
+    otherInput.style.display = 'block';
+    otherInput.focus();
+  } else {
+    otherInput.style.display = 'none';
+  }
   const calBtn = document.getElementById('cal-btn');
   if (calBtn) {
     calBtn.textContent = val === 'none'
@@ -706,8 +718,8 @@ function showResult(d) {
   // Set dynamic invite label
   const firstName = (d.name || '').trim().split(/\s+/)[0];
   document.getElementById('invite-label').textContent = firstName
-    ? `Would you like to send a calendar invite to ${firstName} as well?`
-    : 'Would you like to send a calendar invite as well?';
+    ? `Would you like to send a calendar invite to ${firstName}, or to another team member?`
+    : 'Would you like to send a calendar invite, or to another team member?';
 
   setDefaultDate();
   resultCard.style.display = 'flex';
@@ -742,8 +754,19 @@ function createCalendarEvent() {
   if (selectedInvite === 'email' && currentData.email) {
     attendee = `\nATTENDEE;RSVP=TRUE:mailto:${currentData.email}`;
   } else if (selectedInvite === 'phone' && currentData.phone) {
-    // SMS invite hint in description
     description += `\n\nInvite SMS to: ${currentData.phone}`;
+  } else if (selectedInvite === 'other') {
+    const otherVal = document.getElementById('invite-other-input').value.trim();
+    if (otherVal) {
+      if (otherVal.includes('@')) {
+        attendee = `\nATTENDEE;RSVP=TRUE:mailto:${otherVal}`;
+      } else {
+        description += `\n\nInvite SMS to: ${otherVal}`;
+      }
+    } else {
+      showToast('Please enter an email or phone for the invite');
+      return;
+    }
   }
 
   const ics = [
@@ -871,6 +894,9 @@ function reset() {
   const otherInput = document.getElementById('tone-other-input');
   otherInput.style.display = 'none';
   otherInput.value = '';
+  const inviteOtherInput = document.getElementById('invite-other-input');
+  inviteOtherInput.style.display = 'none';
+  inviteOtherInput.value = '';
   document.getElementById('file-camera').value = '';
   document.getElementById('file-library').value = '';
   document.getElementById('notes-field').value = '';
