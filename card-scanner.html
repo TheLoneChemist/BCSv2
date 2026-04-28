@@ -1,4 +1,4 @@
-<!-- card-scanner v1.2.0 -->
+<!-- card-scanner v1.21.0 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -12,11 +12,11 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg:        #422468;
-    --surface:   #4f2d7a;
-    --surface2:  #5a3588;
-    --border:    #6a429e;
-    --border2:   #7a52ae;
+    --bg:        #2D1B4E;
+    --surface:   #38215e;
+    --surface2:  #42286c;
+    --border:    #543580;
+    --border2:   #644592;
     --accent:    #5A4FCF;
     --accent2:   #AFA8FF;
     --muted:     #9FA3B0;
@@ -98,7 +98,7 @@
   /* Modals */
   .modal-overlay {
     position: fixed; inset: 0;
-    background: rgba(10,8,6,0.82);
+    background: rgba(0,0,0,0.72);
     display: flex; align-items: flex-end; justify-content: center;
     z-index: 100; padding: 1rem;
     backdrop-filter: blur(4px);
@@ -170,8 +170,8 @@
   .action-btn.primary { background: var(--accent); color: #F1F1F5; border-color: var(--accent); }
   .action-btn.primary:hover { background: var(--accent2); color: #0C0C12; }
   .action-btn.wide { width: 100%; margin-top: 8px; flex: unset; }
-  .action-btn.highlight { background: var(--surface2); border-color: var(--accent2); color: var(--accent2); }
-  .action-btn.highlight:hover { background: var(--border); }
+  .action-btn.highlight { background: var(--accent); color: #F1F1F5; border-color: var(--accent); }
+  .action-btn.highlight:hover { background: var(--accent2); color: #0C0C12; }
 
   .reset-btn {
     width: 100%; max-width: 440px; padding: 14px;
@@ -208,7 +208,7 @@
   .cal-field {
     flex: 1; display: flex; flex-direction: column; gap: 5px;
   }
-  .cal-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+  .cal-label { font-size: 12px; color: var(--muted); letter-spacing: 0.02em; }
   input[type="date"], input[type="time"] {
     background: var(--surface2); border: 1px solid var(--border);
     border-radius: var(--radius-sm); color: var(--text);
@@ -228,7 +228,27 @@
     font-family: 'DM Sans', sans-serif;
   }
   .invite-chip.active { background: var(--accent); color: #F1F1F5; border-color: var(--accent); font-weight: 600; }
-  .invite-chip:hover:not(.active) { border-color: var(--border2); }
+  .invite-chip:hover:not(.active):not(.dimmed) { border-color: var(--border2); }
+  .invite-chip.dimmed { opacity: 0.35; cursor: not-allowed; border-style: dashed; }
+  .invite-chip.dimmed:hover { border-color: var(--border); }
+
+  /* Toggle switch */
+  .toggle-row { display: flex; align-items: center; gap: 10px; margin-top: 14px; }
+  .toggle-label { font-size: 13px; color: var(--text2); flex: 1; }
+  .toggle-switch { position: relative; width: 42px; height: 24px; flex-shrink: 0; }
+  .toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+  .toggle-track {
+    position: absolute; inset: 0; border-radius: 12px;
+    background: var(--border2); cursor: pointer; transition: background 0.2s;
+  }
+  .toggle-track::after {
+    content: ''; position: absolute; top: 3px; left: 3px;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: #fff; transition: transform 0.2s;
+  }
+  .toggle-switch input:checked + .toggle-track { background: var(--accent); }
+  .toggle-switch input:checked + .toggle-track::after { transform: translateX(18px); }
+  .team-input-wrap { margin-top: 8px; display: none; }
 
   /* Email draft modal */
   .email-draft {
@@ -300,13 +320,21 @@
   <div class="upload-hint">Business card or QR code</div>
   <div style="display:flex;gap:10px;margin-top:6px;width:100%;">
     <button class="action-btn" style="flex:1;" onclick="document.getElementById('file-camera').click()">📷 Take photo</button>
-    <button class="action-btn" style="flex:1;" onclick="document.getElementById('file-library').click()">🖼 Choose image</button>
+    <button class="action-btn" style="flex:1;" onclick="document.getElementById('file-library').click()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:5px;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>Browse
+    </button>
   </div>
   <input type="file" id="file-camera" accept="image/*" capture="environment" style="display:none">
   <input type="file" id="file-library" accept="image/*" style="display:none">
 </div>
 
 <img id="preview" class="preview-img" alt="Card preview">
+<div id="retake-row" style="display:none; width:100%; max-width:440px; display:none; gap:10px; margin-top: -4px;">
+  <button class="action-btn" style="flex:1;" onclick="document.getElementById('file-camera').click()">📷 Retake photo</button>
+  <button class="action-btn" style="flex:1;" onclick="document.getElementById('file-library').click()">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:5px;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>Browse
+  </button>
+</div>
 <p class="status" id="status"></p>
 <button class="scan-btn" id="scan-btn">Scan card</button>
 <div class="error-msg" id="error-msg"></div>
@@ -314,6 +342,11 @@
 <!-- QR choice modal -->
 <div class="modal-overlay hidden" id="qr-modal">
   <div class="modal-sheet">
+    <img id="qr-modal-thumb" src="" alt="Card preview" style="
+      width:100%; border-radius:10px; max-height:180px;
+      object-fit:contain; background:var(--surface2);
+      border:1px solid var(--border); display:none; margin-bottom:4px;
+    ">
     <div class="modal-title">QR Code Detected</div>
     <div class="modal-subtitle">How would you like to scan this card?</div>
     <button class="modal-btn primary" id="modal-use-qr">Scan QR code</button>
@@ -346,22 +379,47 @@
   <hr class="divider">
   <div id="fields"></div>
 
-  <!-- Actions -->
-  <div class="action-row">
-    <button class="action-btn" onclick="copyContact()">Copy JSON</button>
-    <button class="action-btn primary" onclick="downloadVCard()">Save contact</button>
-  </div>
-  <button class="action-btn wide" onclick="findOnLinkedIn()">Find on LinkedIn</button>
-
   <!-- Notes -->
   <hr class="section-sep">
   <div class="section-title">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
     Conversation notes
   </div>
-  <textarea class="notes-field" id="notes-field" placeholder="What did you talk about? Any key takeaways, promises, or context…"></textarea>
+  <textarea class="notes-field" id="notes-field" placeholder="What did you talk about? Any key takeaways, promises, or context… These notes will be saved to the contact on your phone." style="min-height: 140px;"></textarea>
 
-  <div style="margin-top:10px;">
+  <hr class="section-sep">
+  <div class="section-title" style="margin-bottom: 10px;">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    Save & connect
+  </div>
+
+  <!-- Actions -->
+  <div class="action-row" style="margin-top: 0;">
+    <button class="action-btn primary" onclick="downloadVCard()">Save contact</button>
+  </div>
+  <button class="action-btn wide" onclick="findOnLinkedIn()" style="
+    background: linear-gradient(135deg, #0ea5a0 0%, #0bc5b8 100%);
+    border: none; color: #fff; font-size: 16px; font-weight: 600;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    margin-top: 10px; box-shadow: 0 4px 18px rgba(11,197,184,0.35);
+    letter-spacing: 0.01em;
+  ">
+    <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <rect width="24" height="24" rx="4" fill="#0A66C2"/>
+      <path d="M7.5 9.5H5V19H7.5V9.5ZM6.25 8.5C7.08 8.5 7.75 7.83 7.75 7C7.75 6.17 7.08 5.5 6.25 5.5C5.42 5.5 4.75 6.17 4.75 7C4.75 7.83 5.42 8.5 6.25 8.5ZM19 19H16.5V14.1C16.5 12.6 15.9 12 14.9 12C13.9 12 13.25 12.75 13.25 14.1V19H10.75V9.5H13.15V10.6C13.55 9.85 14.45 9.25 15.65 9.25C17.65 9.25 19 10.5 19 13.1V19Z" fill="white"/>
+    </svg>
+    Find on LinkedIn
+  </button>
+
+  <!-- Email draft -->
+  <hr class="section-sep">
+  <div class="section-title">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+    Would you like a follow-up email drafted?
+  </div>
+  <p style="font-size:13px; color:var(--text2); margin: -4px 0 12px; line-height:1.5;">Choose a length and tone, then tap generate. Your conversation notes will be used to personalize it.</p>
+
+  <div>
     <div class="cal-label" style="margin-bottom:7px;">Email length</div>
     <div class="invite-options">
       <button class="invite-chip" data-para="1" onclick="setParaCount(1)">1 paragraph</button>
@@ -386,7 +444,7 @@
       onblur="this.style.borderColor='var(--border)'">
   </div>
 
-  <button class="action-btn wide highlight" id="gen-email-btn" onclick="generateEmailDraft()" style="margin-top:10px;">✨ Generate follow-up email draft</button>
+  <button class="action-btn wide highlight" id="gen-email-btn" onclick="generateEmailDraft()" style="margin-top:10px;">Generate follow-up email</button>
 
   <!-- Calendar / Follow-up -->
   <hr class="section-sep">
@@ -405,12 +463,38 @@
     </div>
   </div>
 
-  <div style="margin-top:12px;">
-    <div class="cal-label" style="margin-bottom:8px;">Send calendar invite to</div>
-    <div class="invite-options">
-      <button class="invite-chip" data-invite="email" onclick="setInvite('email')">Contact's email</button>
-      <button class="invite-chip" data-invite="phone" onclick="setInvite('phone')">Contact's phone</button>
-      <button class="invite-chip active" data-invite="none" onclick="setInvite('none')">No invite</button>
+  <div style="margin-top:14px;">
+    <div class="cal-label" style="margin-bottom:12px;">Would you like to include anyone else on the reminder?</div>
+
+    <!-- Contact toggle row -->
+    <div class="toggle-row">
+      <span class="toggle-label" id="contact-toggle-label">Contact</span>
+      <label class="toggle-switch">
+        <input type="checkbox" id="contact-toggle" onchange="onContactToggle(this.checked)">
+        <span class="toggle-track"></span>
+      </label>
+    </div>
+    <div id="contact-chips-wrap" style="display:none; margin-top:8px;">
+      <div class="cal-label" style="margin-bottom:6px;">Send via</div>
+      <div class="invite-options">
+        <button class="invite-chip" id="chip-phone" data-invite="phone" onclick="toggleInvite('phone')">Phone</button>
+        <button class="invite-chip" id="chip-email" data-invite="email" onclick="toggleInvite('email')">E-mail</button>
+      </div>
+    </div>
+
+    <!-- Other/team member toggle row -->
+    <div class="toggle-row" style="margin-top:10px;">
+      <span class="toggle-label">Other</span>
+      <label class="toggle-switch">
+        <input type="checkbox" id="team-toggle" onchange="onTeamToggle(this.checked)">
+        <span class="toggle-track"></span>
+      </label>
+    </div>
+    <div class="team-input-wrap" id="team-input-wrap">
+      <input type="text" id="invite-other-input" placeholder="Email or phone number…"
+        style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:10px 12px;outline:none;transition:border-color 0.15s;"
+        onfocus="this.style.borderColor='var(--accent2)'"
+        onblur="this.style.borderColor='var(--border)'">
     </div>
   </div>
 
@@ -437,7 +521,7 @@ let currentData = null;
 let pendingQRText = null;
 let pendingBase64 = null;
 let pendingMediaType = null;
-let selectedInvite = 'none';
+let selectedInvite = new Set(['none']);
 let selectedParaCount = 3;
 let selectedTone = 'professional';
 let emailDraftText = '';
@@ -460,11 +544,51 @@ function setDefaultDate() {
   document.getElementById('cal-date').value = iso;
 }
 
-function setInvite(val) {
-  selectedInvite = val;
+function updateCalBtn() {
+  const calBtn = document.getElementById('cal-btn');
+  if (!calBtn) return;
+  const contactOn = document.getElementById('contact-toggle').checked;
+  const teamOn = document.getElementById('team-toggle').checked;
+  calBtn.textContent = (contactOn || teamOn)
+    ? '📅 Add to calendar and send invite'
+    : '📅 Add to calendar';
+}
+
+function toggleInvite(val) {
+  if (selectedInvite.has(val)) {
+    selectedInvite.delete(val);
+  } else {
+    selectedInvite.add(val);
+  }
   document.querySelectorAll('.invite-chip').forEach(c => {
-    c.classList.toggle('active', c.dataset.invite === val);
+    if (c.dataset.invite) {
+      c.classList.toggle('active', selectedInvite.has(c.dataset.invite));
+    }
   });
+}
+
+function onContactToggle(checked) {
+  const wrap = document.getElementById('contact-chips-wrap');
+  wrap.style.display = checked ? 'block' : 'none';
+  if (!checked) {
+    selectedInvite.delete('phone');
+    selectedInvite.delete('email');
+    document.querySelectorAll('.invite-chip').forEach(c => c.classList.remove('active'));
+  }
+  updateCalBtn();
+}
+
+function onTeamToggle(checked) {
+  selectedInvite.delete('other');
+  if (checked) selectedInvite.add('other');
+  const wrap = document.getElementById('team-input-wrap');
+  wrap.style.display = checked ? 'block' : 'none';
+  if (checked) document.getElementById('invite-other-input').focus();
+  updateCalBtn();
+}
+
+function setInvite(val) {
+  selectedInvite = new Set([val]);
 }
 
 function setParaCount(n) {
@@ -510,7 +634,14 @@ document.getElementById('modal-cancel').addEventListener('click', () => {
   scanBtn.disabled = false;
 });
 
-function showModal() { qrModal.classList.remove('hidden'); }
+function showModal() {
+  const thumb = document.getElementById('qr-modal-thumb');
+  if (thumb && preview.src) {
+    thumb.src = preview.src;
+    thumb.style.display = 'block';
+  }
+  qrModal.classList.remove('hidden');
+}
 function hideModal() { qrModal.classList.add('hidden'); }
 
 function handleFileSelect(file) {
@@ -523,6 +654,7 @@ function handleFileSelect(file) {
       preview.src = e.target.result;
       preview.style.display = 'block';
       uploadArea.style.display = 'none';
+      document.getElementById('retake-row').style.display = 'flex';
       scanBtn.style.display = 'block';
       status.textContent = 'Ready to scan';
       errorMsg.style.display = 'none';
@@ -613,6 +745,7 @@ scanBtn.addEventListener('click', async () => {
   scanBtn.disabled = true;
   status.textContent = 'Compressing image…';
   errorMsg.style.display = 'none';
+  document.getElementById('retake-row').style.display = 'none';
   try {
     const { base64, mediaType, canvas } = await compressImage(file);
     pendingBase64 = base64;
@@ -640,6 +773,7 @@ function initials(name) {
 function showResult(d) {
   status.textContent = '';
   scanBtn.style.display = 'none';
+  preview.style.display = 'block';
   document.getElementById('avatar').textContent = initials(d.name);
   document.getElementById('res-name').textContent = d.name || '—';
   document.getElementById('res-title').textContent = d.title || '';
@@ -657,20 +791,16 @@ function showResult(d) {
     `<div class="field-row"><span class="field-label">${f.label}</span><span class="field-value">${f.value}</span></div>`
   ).join('');
 
-  // Update invite chip availability based on what contact info exists
-  const emailChip = document.querySelector('[data-invite="email"]');
-  const phoneChip = document.querySelector('[data-invite="phone"]');
-  if (!d.email) {
-    emailChip.style.display = 'none';
-    if (d.phone) phoneChip.style.display = '';
-    else phoneChip.style.display = 'none';
-    setInvite('none');
-  } else {
-    emailChip.style.display = '';
-    setInvite('none');
-  }
-  if (!d.phone) phoneChip.style.display = 'none';
-  else phoneChip.style.display = '';
+  // Dim contact chips if no value available
+  const phoneChip = document.getElementById('chip-phone');
+  const emailChip = document.getElementById('chip-email');
+  if (phoneChip) phoneChip.classList.toggle('dimmed', !d.phone);
+  if (emailChip) emailChip.classList.toggle('dimmed', !d.email);
+
+  // Set contact name on toggle label
+  const firstName = (d.name || '').trim().split(/\s+/)[0];
+  const contactLabel = document.getElementById('contact-toggle-label');
+  if (contactLabel) contactLabel.textContent = firstName || 'Contact';
 
   setDefaultDate();
   resultCard.style.display = 'flex';
@@ -700,13 +830,27 @@ function createCalendarEvent() {
   let description = notes ? `Conversation notes:\n${notes}` : '';
   if (emailDraftText) description += (description ? '\n\n' : '') + `Suggested follow-up email:\n${emailDraftText}`;
 
-  // Determine attendee for invite
-  let attendee = '';
-  if (selectedInvite === 'email' && currentData.email) {
-    attendee = `\nATTENDEE;RSVP=TRUE:mailto:${currentData.email}`;
-  } else if (selectedInvite === 'phone' && currentData.phone) {
-    // SMS invite hint in description
+  // Build attendees
+  const attendeeLines = [];
+  const contactOn = document.getElementById('contact-toggle').checked;
+  if (contactOn && selectedInvite.has('email') && currentData.email) {
+    attendeeLines.push(`ATTENDEE;RSVP=TRUE:mailto:${currentData.email}`);
+  }
+  if (contactOn && selectedInvite.has('phone') && currentData.phone) {
     description += `\n\nInvite SMS to: ${currentData.phone}`;
+  }
+  if (selectedInvite.has('other') || document.getElementById('team-toggle').checked) {
+    const otherVal = document.getElementById('invite-other-input').value.trim();
+    if (otherVal) {
+      if (otherVal.includes('@')) {
+        attendeeLines.push(`ATTENDEE;RSVP=TRUE:mailto:${otherVal}`);
+      } else {
+        description += `\n\nInvite SMS to: ${otherVal}`;
+      }
+    } else {
+      showToast('Please enter a team member email or phone');
+      return;
+    }
   }
 
   const ics = [
@@ -718,7 +862,7 @@ function createCalendarEvent() {
     `DTEND:${endStr}`,
     `SUMMARY:${title}`,
     description ? `DESCRIPTION:${description.replace(/\n/g, '\\n')}` : '',
-    attendee,
+    ...attendeeLines,
     'END:VEVENT',
     'END:VCALENDAR'
   ].filter(Boolean).join('\r\n');
@@ -774,7 +918,7 @@ async function generateEmailDraft() {
     showToast('Could not generate email: ' + err.message);
   } finally {
     btn.disabled = false;
-    btn.innerHTML = '✨ Generate follow-up email draft';
+    btn.innerHTML = 'Generate follow-up email';
   }
 }
 
@@ -834,15 +978,27 @@ function reset() {
   const otherInput = document.getElementById('tone-other-input');
   otherInput.style.display = 'none';
   otherInput.value = '';
+  selectedInvite = new Set(['none']);
+  document.querySelectorAll('.invite-chip').forEach(c => {
+    c.classList.remove('active', 'dimmed');
+  });
+  const contactToggle = document.getElementById('contact-toggle');
+  if (contactToggle) { contactToggle.checked = false; }
+  document.getElementById('contact-chips-wrap').style.display = 'none';
+  const teamToggle = document.getElementById('team-toggle');
+  if (teamToggle) { teamToggle.checked = false; }
+  document.getElementById('team-input-wrap').style.display = 'none';
+  document.getElementById('invite-other-input').value = '';
   document.getElementById('file-camera').value = '';
   document.getElementById('file-library').value = '';
   document.getElementById('notes-field').value = '';
-  document.getElementById('gen-email-btn').innerHTML = '✨ Generate follow-up email draft';
+  document.getElementById('gen-email-btn').innerHTML = 'Generate follow-up email';
   document.getElementById('gen-email-btn').disabled = false;
   const calBtn = document.getElementById('cal-btn');
   calBtn.textContent = '📅 Add to calendar';
   calBtn.classList.add('primary'); calBtn.classList.remove('cal-created');
   preview.style.display = 'none';
+  document.getElementById('retake-row').style.display = 'none';
   uploadArea.style.display = 'flex';
   scanBtn.style.display = 'none';
   resultCard.style.display = 'none';
@@ -850,7 +1006,6 @@ function reset() {
   errorMsg.style.display = 'none';
   status.textContent = '';
   currentData = null;
-  setInvite('none');
 }
 
 function showToast(msg, duration = 2200) {
