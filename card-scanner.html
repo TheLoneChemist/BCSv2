@@ -1,4 +1,4 @@
-<!-- card-scanner v1.16.0 -->
+<!-- card-scanner v1.17.0 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -751,6 +751,7 @@ function initials(name) {
 function showResult(d) {
   status.textContent = '';
   scanBtn.style.display = 'none';
+  preview.style.display = 'block';
   document.getElementById('avatar').textContent = initials(d.name);
   document.getElementById('res-name').textContent = d.name || '—';
   document.getElementById('res-title').textContent = d.title || '';
