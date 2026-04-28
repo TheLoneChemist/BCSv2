@@ -1,4 +1,4 @@
-<!-- card-scanner v1.14.0 -->
+<!-- card-scanner v1.15.0 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -228,7 +228,27 @@
     font-family: 'DM Sans', sans-serif;
   }
   .invite-chip.active { background: var(--accent); color: #F1F1F5; border-color: var(--accent); font-weight: 600; }
-  .invite-chip:hover:not(.active) { border-color: var(--border2); }
+  .invite-chip:hover:not(.active):not(.dimmed) { border-color: var(--border2); }
+  .invite-chip.dimmed { opacity: 0.35; cursor: not-allowed; border-style: dashed; }
+  .invite-chip.dimmed:hover { border-color: var(--border); }
+
+  /* Toggle switch */
+  .toggle-row { display: flex; align-items: center; gap: 10px; margin-top: 14px; }
+  .toggle-label { font-size: 13px; color: var(--text2); flex: 1; }
+  .toggle-switch { position: relative; width: 42px; height: 24px; flex-shrink: 0; }
+  .toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+  .toggle-track {
+    position: absolute; inset: 0; border-radius: 12px;
+    background: var(--border2); cursor: pointer; transition: background 0.2s;
+  }
+  .toggle-track::after {
+    content: ''; position: absolute; top: 3px; left: 3px;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: #fff; transition: transform 0.2s;
+  }
+  .toggle-switch input:checked + .toggle-track { background: var(--accent); }
+  .toggle-switch input:checked + .toggle-track::after { transform: translateX(18px); }
+  .team-input-wrap { margin-top: 8px; display: none; }
 
   /* Email draft modal */
   .email-draft {
@@ -430,20 +450,35 @@
     </div>
   </div>
 
-  <div style="margin-top:12px;">
-    <div class="cal-label" style="margin-bottom:8px;" id="invite-label">Would you like to send a calendar invite as well, or to another team member?</div>
-    <div class="invite-options" style="align-items:center;">
-      <button class="invite-chip active" data-invite="none" onclick="toggleInvite('none')">No</button>
-      <span style="width:1px;height:22px;background:var(--border2);flex-shrink:0;"></span>
-      <button class="invite-chip" data-invite="phone" onclick="toggleInvite('phone')">Phone</button>
-      <button class="invite-chip" data-invite="email" onclick="toggleInvite('email')">E-mail</button>
-      <span style="width:1px;height:22px;background:var(--border2);flex-shrink:0;"></span>
-      <button class="invite-chip" data-invite="other" onclick="toggleInvite('other')">Team member</button>
+  <div style="margin-top:14px;">
+    <div class="cal-label" style="margin-bottom:10px;" id="invite-label">Would you like to send a calendar invite?</div>
+
+    <!-- No invite opt-out -->
+    <div style="margin-bottom:10px;">
+      <button class="invite-chip active" data-invite="none" onclick="toggleInvite('none')" style="width:100%;text-align:center;">No invite</button>
     </div>
-    <input type="text" id="invite-other-input" placeholder="Enter email or phone number…"
-      style="display:none;margin-top:8px;width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:10px 12px;outline:none;transition:border-color 0.15s;"
-      onfocus="this.style.borderColor='var(--accent2)'"
-      onblur="this.style.borderColor='var(--border)'">
+
+    <!-- Contact chips -->
+    <div class="cal-label" style="margin-bottom:6px;">Send to contact via</div>
+    <div class="invite-options">
+      <button class="invite-chip" id="chip-phone" data-invite="phone" onclick="toggleInvite('phone')">Phone</button>
+      <button class="invite-chip" id="chip-email" data-invite="email" onclick="toggleInvite('email')">E-mail</button>
+    </div>
+
+    <!-- Team member toggle -->
+    <div class="toggle-row">
+      <span class="toggle-label">Also notify a team member</span>
+      <label class="toggle-switch">
+        <input type="checkbox" id="team-toggle" onchange="onTeamToggle(this.checked)">
+        <span class="toggle-track"></span>
+      </label>
+    </div>
+    <div class="team-input-wrap" id="team-input-wrap">
+      <input type="text" id="invite-other-input" placeholder="Team member email or phone…"
+        style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:10px 12px;outline:none;transition:border-color 0.15s;"
+        onfocus="this.style.borderColor='var(--accent2)'"
+        onblur="this.style.borderColor='var(--border)'">
+    </div>
   </div>
 
   <button class="action-btn wide primary" id="cal-btn" onclick="createCalendarEvent()" style="margin-top:12px;">
@@ -504,21 +539,33 @@ function toggleInvite(val) {
       selectedInvite.add(val);
     }
   }
+  // Update chip active states (only none/phone/email chips here)
   document.querySelectorAll('.invite-chip').forEach(c => {
-    c.classList.toggle('active', selectedInvite.has(c.dataset.invite));
+    if (c.dataset.invite) {
+      c.classList.toggle('active', selectedInvite.has(c.dataset.invite));
+    }
   });
-  const otherInput = document.getElementById('invite-other-input');
-  if (selectedInvite.has('other')) {
-    otherInput.style.display = 'block';
-    otherInput.focus();
-  } else {
-    otherInput.style.display = 'none';
-  }
   const calBtn = document.getElementById('cal-btn');
   if (calBtn) {
-    calBtn.textContent = selectedInvite.has('none')
-      ? '📅 Add to calendar'
-      : '📅 Add to calendar and send invite';
+    const hasInvite = !selectedInvite.has('none') || document.getElementById('team-toggle').checked;
+    calBtn.textContent = hasInvite
+      ? '📅 Add to calendar and send invite'
+      : '📅 Add to calendar';
+  }
+}
+
+function onTeamToggle(checked) {
+  selectedInvite.delete('other');
+  if (checked) selectedInvite.add('other');
+  const wrap = document.getElementById('team-input-wrap');
+  wrap.style.display = checked ? 'block' : 'none';
+  if (checked) document.getElementById('invite-other-input').focus();
+  const calBtn = document.getElementById('cal-btn');
+  if (calBtn) {
+    const hasInvite = !selectedInvite.has('none') || checked;
+    calBtn.textContent = hasInvite
+      ? '📅 Add to calendar and send invite'
+      : '📅 Add to calendar';
   }
 }
 
@@ -717,20 +764,11 @@ function showResult(d) {
     `<div class="field-row"><span class="field-label">${f.label}</span><span class="field-value">${f.value}</span></div>`
   ).join('');
 
-  // Update invite chip availability based on what contact info exists
-  const emailChip = document.querySelector('[data-invite="email"]');
-  const phoneChip = document.querySelector('[data-invite="phone"]');
-  if (!d.email) {
-    emailChip.style.display = 'none';
-    if (d.phone) phoneChip.style.display = '';
-    else phoneChip.style.display = 'none';
-    setInvite('none');
-  } else {
-    emailChip.style.display = '';
-    setInvite('none');
-  }
-  if (!d.phone) phoneChip.style.display = 'none';
-  else phoneChip.style.display = '';
+  // Dim contact chips if no value available
+  const phoneChip = document.getElementById('chip-phone');
+  const emailChip = document.getElementById('chip-email');
+  if (phoneChip) phoneChip.classList.toggle('dimmed', !d.phone);
+  if (emailChip) emailChip.classList.toggle('dimmed', !d.email);
 
   // Set dynamic invite label
   const firstName = (d.name || '').trim().split(/\s+/)[0];
@@ -774,7 +812,7 @@ function createCalendarEvent() {
   if (selectedInvite.has('phone') && currentData.phone) {
     description += `\n\nInvite SMS to: ${currentData.phone}`;
   }
-  if (selectedInvite.has('other')) {
+  if (selectedInvite.has('other') || document.getElementById('team-toggle').checked) {
     const otherVal = document.getElementById('invite-other-input').value.trim();
     if (otherVal) {
       if (otherVal.includes('@')) {
@@ -916,8 +954,11 @@ function reset() {
   selectedInvite = new Set(['none']);
   document.querySelectorAll('.invite-chip').forEach(c => {
     c.classList.toggle('active', c.dataset.invite === 'none');
+    c.classList.remove('dimmed');
   });
-  document.getElementById('invite-other-input').style.display = 'none';
+  const teamToggle = document.getElementById('team-toggle');
+  if (teamToggle) { teamToggle.checked = false; }
+  document.getElementById('team-input-wrap').style.display = 'none';
   document.getElementById('invite-other-input').value = '';
   document.getElementById('file-camera').value = '';
   document.getElementById('file-library').value = '';
