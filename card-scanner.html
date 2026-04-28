@@ -1,3 +1,4 @@
+<!-- card-scanner v1.1.0 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -269,6 +270,16 @@
 
   /* Success color override for calendar button after creation */
   .cal-created { border-color: var(--success) !important; color: var(--success) !important; background: transparent !important; }
+  /* AI disclaimer */
+  .ai-disclaimer {
+    width: 100%; max-width: 440px;
+    display: flex; align-items: flex-start; gap: 8px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 11px 13px;
+    font-size: 12px; color: var(--text2); line-height: 1.5;
+  }
+  .ai-disclaimer svg { flex-shrink: 0; margin-top: 1px; opacity: 0.6; }
+  .ai-disclaimer strong { color: var(--accent2); font-weight: 600; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 </head>
@@ -409,6 +420,13 @@
 </div>
 
 <button class="reset-btn" id="reset-btn" onclick="reset()">Scan another card</button>
+
+<div class="ai-disclaimer">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+  </svg>
+  <span>This app uses AI to read cards and generate emails. Card scanning and email drafts are powered by <strong>Claude Haiku 4.5</strong> (Anthropic). Images are processed on-demand and not stored.</span>
+</div>
 
 <!-- Toast -->
 <div class="toast" id="toast"></div>
