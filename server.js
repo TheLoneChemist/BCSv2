@@ -1,3 +1,4 @@
+// card-scanner-api v1.1.0
 import express from 'express';
 import cors from 'cors';
 import Anthropic from '@anthropic-ai/sdk';
