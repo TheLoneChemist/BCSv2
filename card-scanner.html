@@ -1,4 +1,4 @@
-<!-- card-scanner v1.13.0 -->
+<!-- card-scanner v1.14.0 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -432,10 +432,12 @@
 
   <div style="margin-top:12px;">
     <div class="cal-label" style="margin-bottom:8px;" id="invite-label">Would you like to send a calendar invite as well, or to another team member?</div>
-    <div class="invite-options">
+    <div class="invite-options" style="align-items:center;">
       <button class="invite-chip active" data-invite="none" onclick="toggleInvite('none')">No</button>
+      <span style="width:1px;height:22px;background:var(--border2);flex-shrink:0;"></span>
       <button class="invite-chip" data-invite="phone" onclick="toggleInvite('phone')">Phone</button>
       <button class="invite-chip" data-invite="email" onclick="toggleInvite('email')">E-mail</button>
+      <span style="width:1px;height:22px;background:var(--border2);flex-shrink:0;"></span>
       <button class="invite-chip" data-invite="other" onclick="toggleInvite('other')">Team member</button>
     </div>
     <input type="text" id="invite-other-input" placeholder="Enter email or phone number…"
