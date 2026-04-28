@@ -1,4 +1,4 @@
-<!-- card-scanner v1.18.0 -->
+<!-- card-scanner v1.20.0 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -98,7 +98,7 @@
   /* Modals */
   .modal-overlay {
     position: fixed; inset: 0;
-    background: rgba(0,0,0,0.45);
+    background: rgba(0,0,0,0.72);
     display: flex; align-items: flex-end; justify-content: center;
     z-index: 100; padding: 1rem;
     backdrop-filter: blur(4px);
@@ -327,6 +327,10 @@
 </div>
 
 <img id="preview" class="preview-img" alt="Card preview">
+<div id="retake-row" style="display:none; width:100%; max-width:440px; display:none; gap:10px; margin-top: -4px;">
+  <button class="action-btn" style="flex:1;" onclick="document.getElementById('file-camera').click()">📷 Retake photo</button>
+  <button class="action-btn" style="flex:1;" onclick="document.getElementById('file-library').click()">🖼 Choose different</button>
+</div>
 <p class="status" id="status"></p>
 <button class="scan-btn" id="scan-btn">Scan card</button>
 <div class="error-msg" id="error-msg"></div>
@@ -334,6 +338,11 @@
 <!-- QR choice modal -->
 <div class="modal-overlay hidden" id="qr-modal">
   <div class="modal-sheet">
+    <img id="qr-modal-thumb" src="" alt="Card preview" style="
+      width:100%; border-radius:10px; max-height:180px;
+      object-fit:contain; background:var(--surface2);
+      border:1px solid var(--border); display:none; margin-bottom:4px;
+    ">
     <div class="modal-title">QR Code Detected</div>
     <div class="modal-subtitle">How would you like to scan this card?</div>
     <button class="modal-btn primary" id="modal-use-qr">Scan QR code</button>
@@ -621,7 +630,14 @@ document.getElementById('modal-cancel').addEventListener('click', () => {
   scanBtn.disabled = false;
 });
 
-function showModal() { qrModal.classList.remove('hidden'); }
+function showModal() {
+  const thumb = document.getElementById('qr-modal-thumb');
+  if (thumb && preview.src) {
+    thumb.src = preview.src;
+    thumb.style.display = 'block';
+  }
+  qrModal.classList.remove('hidden');
+}
 function hideModal() { qrModal.classList.add('hidden'); }
 
 function handleFileSelect(file) {
@@ -634,6 +650,7 @@ function handleFileSelect(file) {
       preview.src = e.target.result;
       preview.style.display = 'block';
       uploadArea.style.display = 'none';
+      document.getElementById('retake-row').style.display = 'flex';
       scanBtn.style.display = 'block';
       status.textContent = 'Ready to scan';
       errorMsg.style.display = 'none';
@@ -724,6 +741,7 @@ scanBtn.addEventListener('click', async () => {
   scanBtn.disabled = true;
   status.textContent = 'Compressing image…';
   errorMsg.style.display = 'none';
+  document.getElementById('retake-row').style.display = 'none';
   try {
     const { base64, mediaType, canvas } = await compressImage(file);
     pendingBase64 = base64;
@@ -976,6 +994,7 @@ function reset() {
   calBtn.textContent = '📅 Add to calendar';
   calBtn.classList.add('primary'); calBtn.classList.remove('cal-created');
   preview.style.display = 'none';
+  document.getElementById('retake-row').style.display = 'none';
   uploadArea.style.display = 'flex';
   scanBtn.style.display = 'none';
   resultCard.style.display = 'none';
