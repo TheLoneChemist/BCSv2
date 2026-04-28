@@ -1,4 +1,4 @@
-<!-- card-scanner v1.20.0 -->
+<!-- card-scanner v1.21.0 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -320,7 +320,9 @@
   <div class="upload-hint">Business card or QR code</div>
   <div style="display:flex;gap:10px;margin-top:6px;width:100%;">
     <button class="action-btn" style="flex:1;" onclick="document.getElementById('file-camera').click()">📷 Take photo</button>
-    <button class="action-btn" style="flex:1;" onclick="document.getElementById('file-library').click()">🖼 Choose image</button>
+    <button class="action-btn" style="flex:1;" onclick="document.getElementById('file-library').click()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:5px;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>Browse
+    </button>
   </div>
   <input type="file" id="file-camera" accept="image/*" capture="environment" style="display:none">
   <input type="file" id="file-library" accept="image/*" style="display:none">
@@ -329,7 +331,9 @@
 <img id="preview" class="preview-img" alt="Card preview">
 <div id="retake-row" style="display:none; width:100%; max-width:440px; display:none; gap:10px; margin-top: -4px;">
   <button class="action-btn" style="flex:1;" onclick="document.getElementById('file-camera').click()">📷 Retake photo</button>
-  <button class="action-btn" style="flex:1;" onclick="document.getElementById('file-library').click()">🖼 Choose different</button>
+  <button class="action-btn" style="flex:1;" onclick="document.getElementById('file-library').click()">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:5px;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>Browse
+  </button>
 </div>
 <p class="status" id="status"></p>
 <button class="scan-btn" id="scan-btn">Scan card</button>
