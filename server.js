@@ -92,8 +92,10 @@ Reply ONLY with raw JSON, no markdown, no explanation, no code blocks.
 Required JSON keys: name, title, company, email, phone, website
 
 Rules:
-- "name" must be the individual person's full name (e.g. "Jane Smith") — not the company name
-- If you see a person's name prominently displayed, always populate "name"
+- "name" must ONLY be an individual human's personal name (e.g. "Gary Sturn" or "Gary M. Sturn MD") — NEVER a business, practice, or organization name
+- Look for a personal name near a job title like "MD", "PhD", "CEO", "Director", etc. — that person's name goes in "name"
+- "company" is for the business/organization name (e.g. "Altamonte Medical Associates P.A.")
+- If the card has both a personal name AND a company name, both fields must be populated
 - Use empty string "" for any field not found
 - Do not wrap output in backticks or markdown`
           }
