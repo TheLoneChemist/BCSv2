@@ -1,4 +1,4 @@
-<!-- card-scanner v1.8.0 -->
+<!-- card-scanner v1.9.0 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -411,7 +411,7 @@
       onblur="this.style.borderColor='var(--border)'">
   </div>
 
-  <button class="action-btn wide highlight" id="gen-email-btn" onclick="generateEmailDraft()" style="margin-top:10px;">✨ Generate follow-up email</button>
+  <button class="action-btn wide highlight" id="gen-email-btn" onclick="generateEmailDraft()" style="margin-top:10px;">Generate follow-up email</button>
 
   <!-- Calendar / Follow-up -->
   <hr class="section-sep">
@@ -431,7 +431,7 @@
   </div>
 
   <div style="margin-top:12px;">
-    <div class="cal-label" style="margin-bottom:8px;">Send calendar invite to</div>
+    <div class="cal-label" style="margin-bottom:8px;" id="invite-label">Would you like to send a calendar invite as well?</div>
     <div class="invite-options">
       <button class="invite-chip" data-invite="email" onclick="setInvite('email')">Contact's email</button>
       <button class="invite-chip" data-invite="phone" onclick="setInvite('phone')">Contact's phone</button>
@@ -696,6 +696,12 @@ function showResult(d) {
   }
   if (!d.phone) phoneChip.style.display = 'none';
   else phoneChip.style.display = '';
+
+  // Set dynamic invite label
+  const firstName = (d.name || '').trim().split(/\s+/)[0];
+  document.getElementById('invite-label').textContent = firstName
+    ? `Would you like to send a calendar invite to ${firstName} as well?`
+    : 'Would you like to send a calendar invite as well?';
 
   setDefaultDate();
   resultCard.style.display = 'flex';
