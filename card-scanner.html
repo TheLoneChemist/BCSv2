@@ -1,4 +1,4 @@
-<!-- card-scanner v1.15.0 -->
+<!-- card-scanner v1.16.0 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -451,30 +451,34 @@
   </div>
 
   <div style="margin-top:14px;">
-    <div class="cal-label" style="margin-bottom:10px;" id="invite-label">Would you like to send a calendar invite?</div>
+    <div class="cal-label" style="margin-bottom:12px;">Would you like to include anyone else on the reminder?</div>
 
-    <!-- No invite opt-out -->
-    <div style="margin-bottom:10px;">
-      <button class="invite-chip active" data-invite="none" onclick="toggleInvite('none')" style="width:100%;text-align:center;">No invite</button>
-    </div>
-
-    <!-- Contact chips -->
-    <div class="cal-label" style="margin-bottom:6px;">Send to contact via</div>
-    <div class="invite-options">
-      <button class="invite-chip" id="chip-phone" data-invite="phone" onclick="toggleInvite('phone')">Phone</button>
-      <button class="invite-chip" id="chip-email" data-invite="email" onclick="toggleInvite('email')">E-mail</button>
-    </div>
-
-    <!-- Team member toggle -->
+    <!-- Contact toggle row -->
     <div class="toggle-row">
-      <span class="toggle-label">Also notify a team member</span>
+      <span class="toggle-label" id="contact-toggle-label">Contact</span>
+      <label class="toggle-switch">
+        <input type="checkbox" id="contact-toggle" onchange="onContactToggle(this.checked)">
+        <span class="toggle-track"></span>
+      </label>
+    </div>
+    <div id="contact-chips-wrap" style="display:none; margin-top:8px;">
+      <div class="cal-label" style="margin-bottom:6px;">Send via</div>
+      <div class="invite-options">
+        <button class="invite-chip" id="chip-phone" data-invite="phone" onclick="toggleInvite('phone')">Phone</button>
+        <button class="invite-chip" id="chip-email" data-invite="email" onclick="toggleInvite('email')">E-mail</button>
+      </div>
+    </div>
+
+    <!-- Other/team member toggle row -->
+    <div class="toggle-row" style="margin-top:10px;">
+      <span class="toggle-label">Other</span>
       <label class="toggle-switch">
         <input type="checkbox" id="team-toggle" onchange="onTeamToggle(this.checked)">
         <span class="toggle-track"></span>
       </label>
     </div>
     <div class="team-input-wrap" id="team-input-wrap">
-      <input type="text" id="invite-other-input" placeholder="Team member email or phone…"
+      <input type="text" id="invite-other-input" placeholder="Email or phone number…"
         style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:10px 12px;outline:none;transition:border-color 0.15s;"
         onfocus="this.style.borderColor='var(--accent2)'"
         onblur="this.style.borderColor='var(--border)'">
@@ -527,31 +531,38 @@ function setDefaultDate() {
   document.getElementById('cal-date').value = iso;
 }
 
+function updateCalBtn() {
+  const calBtn = document.getElementById('cal-btn');
+  if (!calBtn) return;
+  const contactOn = document.getElementById('contact-toggle').checked;
+  const teamOn = document.getElementById('team-toggle').checked;
+  calBtn.textContent = (contactOn || teamOn)
+    ? '📅 Add to calendar and send invite'
+    : '📅 Add to calendar';
+}
+
 function toggleInvite(val) {
-  if (val === 'none') {
-    selectedInvite = new Set(['none']);
+  if (selectedInvite.has(val)) {
+    selectedInvite.delete(val);
   } else {
-    selectedInvite.delete('none');
-    if (selectedInvite.has(val)) {
-      selectedInvite.delete(val);
-      if (selectedInvite.size === 0) selectedInvite.add('none');
-    } else {
-      selectedInvite.add(val);
-    }
+    selectedInvite.add(val);
   }
-  // Update chip active states (only none/phone/email chips here)
   document.querySelectorAll('.invite-chip').forEach(c => {
     if (c.dataset.invite) {
       c.classList.toggle('active', selectedInvite.has(c.dataset.invite));
     }
   });
-  const calBtn = document.getElementById('cal-btn');
-  if (calBtn) {
-    const hasInvite = !selectedInvite.has('none') || document.getElementById('team-toggle').checked;
-    calBtn.textContent = hasInvite
-      ? '📅 Add to calendar and send invite'
-      : '📅 Add to calendar';
+}
+
+function onContactToggle(checked) {
+  const wrap = document.getElementById('contact-chips-wrap');
+  wrap.style.display = checked ? 'block' : 'none';
+  if (!checked) {
+    selectedInvite.delete('phone');
+    selectedInvite.delete('email');
+    document.querySelectorAll('.invite-chip').forEach(c => c.classList.remove('active'));
   }
+  updateCalBtn();
 }
 
 function onTeamToggle(checked) {
@@ -560,18 +571,11 @@ function onTeamToggle(checked) {
   const wrap = document.getElementById('team-input-wrap');
   wrap.style.display = checked ? 'block' : 'none';
   if (checked) document.getElementById('invite-other-input').focus();
-  const calBtn = document.getElementById('cal-btn');
-  if (calBtn) {
-    const hasInvite = !selectedInvite.has('none') || checked;
-    calBtn.textContent = hasInvite
-      ? '📅 Add to calendar and send invite'
-      : '📅 Add to calendar';
-  }
+  updateCalBtn();
 }
 
 function setInvite(val) {
   selectedInvite = new Set([val]);
-  toggleInvite(val);
 }
 
 function setParaCount(n) {
@@ -770,11 +774,10 @@ function showResult(d) {
   if (phoneChip) phoneChip.classList.toggle('dimmed', !d.phone);
   if (emailChip) emailChip.classList.toggle('dimmed', !d.email);
 
-  // Set dynamic invite label
+  // Set contact name on toggle label
   const firstName = (d.name || '').trim().split(/\s+/)[0];
-  document.getElementById('invite-label').textContent = firstName
-    ? `Would you like to send a calendar invite to ${firstName}, or to another team member?`
-    : 'Would you like to send a calendar invite, or to another team member?';
+  const contactLabel = document.getElementById('contact-toggle-label');
+  if (contactLabel) contactLabel.textContent = firstName || 'Contact';
 
   setDefaultDate();
   resultCard.style.display = 'flex';
@@ -804,12 +807,13 @@ function createCalendarEvent() {
   let description = notes ? `Conversation notes:\n${notes}` : '';
   if (emailDraftText) description += (description ? '\n\n' : '') + `Suggested follow-up email:\n${emailDraftText}`;
 
-  // Build attendees from multi-select Set
+  // Build attendees
   const attendeeLines = [];
-  if (selectedInvite.has('email') && currentData.email) {
+  const contactOn = document.getElementById('contact-toggle').checked;
+  if (contactOn && selectedInvite.has('email') && currentData.email) {
     attendeeLines.push(`ATTENDEE;RSVP=TRUE:mailto:${currentData.email}`);
   }
-  if (selectedInvite.has('phone') && currentData.phone) {
+  if (contactOn && selectedInvite.has('phone') && currentData.phone) {
     description += `\n\nInvite SMS to: ${currentData.phone}`;
   }
   if (selectedInvite.has('other') || document.getElementById('team-toggle').checked) {
@@ -953,9 +957,11 @@ function reset() {
   otherInput.value = '';
   selectedInvite = new Set(['none']);
   document.querySelectorAll('.invite-chip').forEach(c => {
-    c.classList.toggle('active', c.dataset.invite === 'none');
-    c.classList.remove('dimmed');
+    c.classList.remove('active', 'dimmed');
   });
+  const contactToggle = document.getElementById('contact-toggle');
+  if (contactToggle) { contactToggle.checked = false; }
+  document.getElementById('contact-chips-wrap').style.display = 'none';
   const teamToggle = document.getElementById('team-toggle');
   if (teamToggle) { teamToggle.checked = false; }
   document.getElementById('team-input-wrap').style.display = 'none';
