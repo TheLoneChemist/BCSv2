@@ -1,4 +1,4 @@
-<!-- card-scanner v1.28.0 -->
+<!-- card-scanner v1.30.0 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -422,11 +422,65 @@
       </div>
       <div>
         <div class="cal-label" style="margin-bottom:6px;">Time</div>
-        <input type="time" id="modal-cal-time" value="13:00" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;padding:12px;outline:none;color-scheme:dark;transition:border-color 0.15s;" onfocus="this.style.borderColor='var(--accent2)'" onblur="this.style.borderColor='var(--border)'">
+        <button id="modal-cal-time-btn" onclick="openClock('modal')" style="
+          width:100%;background:var(--surface2);border:1px solid var(--border);
+          border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;
+          font-size:15px;padding:12px;text-align:left;cursor:pointer;
+          transition:border-color 0.15s;
+        " onmouseover="this.style.borderColor='var(--accent2)'" onmouseout="this.style.borderColor='var(--border)'">
+          1:00 PM
+        </button>
+        <input type="hidden" id="modal-cal-time" value="13:00">
       </div>
     </div>
     <button class="modal-btn primary" onclick="applyCustomDate()" style="margin-top:4px;">Set date &amp; time</button>
     <button class="modal-btn cancel" onclick="document.getElementById('date-picker-modal').classList.add('hidden')">Cancel</button>
+  </div>
+</div>
+
+<!-- Clock picker modal -->
+<div class="modal-overlay hidden" id="clock-modal">
+  <div class="modal-sheet" style="align-items:center;">
+    <div class="modal-title" style="width:100%;text-align:center;">Set time</div>
+
+    <!-- Digital readout -->
+    <div style="display:flex;align-items:center;justify-content:center;gap:4px;margin:4px 0 12px;">
+      <div id="clock-hour-display" onclick="setClockMode('hour')" style="
+        font-family:'DM Serif Display',serif;font-size:42px;padding:8px 14px;
+        border-radius:var(--radius-sm);cursor:pointer;background:var(--accent);color:#F1F1F5;
+        min-width:72px;text-align:center;transition:background 0.15s;
+      ">1</div>
+      <div style="font-family:'DM Serif Display',serif;font-size:42px;color:var(--text2);">:</div>
+      <div id="clock-min-display" onclick="setClockMode('minute')" style="
+        font-family:'DM Serif Display',serif;font-size:42px;padding:8px 14px;
+        border-radius:var(--radius-sm);cursor:pointer;background:var(--surface2);color:var(--text);
+        min-width:72px;text-align:center;transition:background 0.15s;
+      ">00</div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-left:6px;">
+        <button id="clock-am-btn" onclick="setAmPm('AM')" style="
+          padding:6px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);
+          font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;
+          background:var(--accent);color:#F1F1F5;transition:all 0.15s;
+        ">AM</button>
+        <button id="clock-pm-btn" onclick="setAmPm('PM')" style="
+          padding:6px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);
+          font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;
+          background:var(--surface2);color:var(--text);transition:all 0.15s;
+        ">PM</button>
+      </div>
+    </div>
+
+    <!-- Clock face -->
+    <div style="position:relative;width:220px;height:220px;margin:0 auto;">
+      <canvas id="clock-canvas" width="220" height="220" onclick="clockCanvasClick(event)"
+        style="cursor:pointer;border-radius:50%;background:var(--surface2);border:1px solid var(--border);">
+      </canvas>
+    </div>
+
+    <div style="font-size:12px;color:var(--muted);margin-top:6px;text-align:center;" id="clock-mode-hint">Tap a hour</div>
+
+    <button class="modal-btn primary" onclick="applyClockTime()" style="width:100%;margin-top:8px;">Confirm</button>
+    <button class="modal-btn cancel" onclick="document.getElementById('clock-modal').classList.add('hidden')">Cancel</button>
   </div>
 </div>
 
@@ -523,7 +577,15 @@
     </div>
     <div class="cal-field">
       <div class="cal-label">Time</div>
-      <input type="time" id="cal-time" value="13:00">
+      <button id="cal-time-btn" onclick="openClock('cal')" style="
+        width:100%;background:var(--surface2);border:1px solid var(--border);
+        border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;
+        font-size:14px;padding:10px 12px;text-align:left;cursor:pointer;
+        transition:border-color 0.15s;
+      " onmouseover="this.style.borderColor='var(--accent2)'" onmouseout="this.style.borderColor='var(--border)'">
+        1:00 PM
+      </button>
+      <input type="hidden" id="cal-time" value="13:00">
     </div>
   </div>
 
@@ -974,6 +1036,164 @@ function formatPhone(raw) {
   // Fallback — return as-is
   return raw;
 }
+
+/* ─── Clock picker ──────────────────────────────────── */
+let clockTargetId = 'cal';
+let clockHour = 1;
+let clockMinute = 0;
+let clockAmPm = 'PM';
+let clockMode = 'hour';
+
+function fmt12(h, m, ap) {
+  return `${h}:${String(m).padStart(2,'0')} ${ap}`;
+}
+function to24(h, ap) {
+  if (ap === 'AM') return h === 12 ? 0 : h;
+  return h === 12 ? 12 : h + 12;
+}
+function from24(h24) {
+  const ap = h24 < 12 ? 'AM' : 'PM';
+  const h = h24 % 12 === 0 ? 12 : h24 % 12;
+  return { h, ap };
+}
+
+function openClock(target) {
+  clockTargetId = target;
+  const hiddenId = target === 'cal' ? 'cal-time' : 'modal-cal-time';
+  const val = document.getElementById(hiddenId).value || '13:00';
+  const [h24str, mstr] = val.split(':');
+  const { h, ap } = from24(parseInt(h24str));
+  clockHour = h;
+  clockMinute = parseInt(mstr) || 0;
+  clockAmPm = ap;
+  clockMode = 'hour';
+  document.getElementById('clock-modal').classList.remove('hidden');
+  requestAnimationFrame(renderClock);
+}
+
+function setClockMode(mode) {
+  clockMode = mode;
+  renderClock();
+}
+
+function setAmPm(ap) {
+  clockAmPm = ap;
+  renderClock();
+}
+
+function clockCanvasClick(e) {
+  const canvas = document.getElementById('clock-canvas');
+  const rect = canvas.getBoundingClientRect();
+  const cx = 110, cy = 110;
+  const r = 90;
+  const x = e.clientX - rect.left - cx;
+  const y = e.clientY - rect.top - cy;
+  const angle = Math.atan2(y, x) + Math.PI / 2;
+  const deg = ((angle * 180 / Math.PI) + 360) % 360;
+  if (clockMode === 'hour') {
+    clockHour = Math.round(deg / 30) % 12 || 12;
+    clockMode = 'minute';
+  } else {
+    clockMinute = Math.round(deg / 6) % 60;
+  }
+  renderClock();
+}
+
+function renderClock() {
+  const canvas = document.getElementById('clock-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const cx = 110, cy = 110, r = 90;
+  const style = getComputedStyle(document.documentElement);
+  const accent  = style.getPropertyValue('--accent').trim()  || '#5A4FCF';
+  const textCol = style.getPropertyValue('--text').trim()    || '#F1F1F5';
+  const muted   = style.getPropertyValue('--muted').trim()   || '#9FA3B0';
+  const surf2   = style.getPropertyValue('--surface2').trim()|| '#42286c';
+
+  ctx.clearRect(0, 0, 220, 220);
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fillStyle = surf2;
+  ctx.fill();
+
+  for (let i = 0; i < 60; i++) {
+    const ang = (i / 60) * Math.PI * 2 - Math.PI / 2;
+    const isMajor = i % 5 === 0;
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(ang) * (r - (isMajor ? 12 : 7)),
+               cy + Math.sin(ang) * (r - (isMajor ? 12 : 7)));
+    ctx.lineTo(cx + Math.cos(ang) * (r - 2),
+               cy + Math.sin(ang) * (r - 2));
+    ctx.strokeStyle = isMajor ? muted : muted + '66';
+    ctx.lineWidth = isMajor ? 1.5 : 0.8;
+    ctx.stroke();
+  }
+
+  const items = clockMode === 'hour'
+    ? [1,2,3,4,5,6,7,8,9,10,11,12]
+    : [0,5,10,15,20,25,30,35,40,45,50,55];
+  const selected = clockMode === 'hour' ? clockHour : clockMinute;
+
+  items.forEach((val, i) => {
+    const ang = (i / 12) * Math.PI * 2 - Math.PI / 2;
+    const nr = r - 22;
+    const nx = cx + Math.cos(ang) * nr;
+    const ny = cy + Math.sin(ang) * nr;
+    const isSel = val === selected;
+    if (isSel) {
+      ctx.beginPath();
+      ctx.arc(nx, ny, 14, 0, Math.PI * 2);
+      ctx.fillStyle = accent;
+      ctx.fill();
+    }
+    ctx.font = `${isSel ? 600 : 400} 13px 'DM Sans', sans-serif`;
+    ctx.fillStyle = isSel ? '#F1F1F5' : textCol;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(clockMode === 'hour' ? val : String(val).padStart(2,'0'), nx, ny);
+  });
+
+  const handAng = clockMode === 'hour'
+    ? ((clockHour % 12) / 12) * Math.PI * 2 - Math.PI / 2
+    : (clockMinute / 60) * Math.PI * 2 - Math.PI / 2;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(cx + Math.cos(handAng) * (r - 28), cy + Math.sin(handAng) * (r - 28));
+  ctx.strokeStyle = accent;
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+  ctx.fillStyle = accent;
+  ctx.fill();
+
+  const hd = document.getElementById('clock-hour-display');
+  const md = document.getElementById('clock-min-display');
+  const ab = document.getElementById('clock-am-btn');
+  const pb = document.getElementById('clock-pm-btn');
+  const ht = document.getElementById('clock-mode-hint');
+  if (hd) { hd.textContent = clockHour; hd.style.background = clockMode === 'hour' ? accent : surf2; hd.style.color = clockMode === 'hour' ? '#F1F1F5' : textCol; }
+  if (md) { md.textContent = String(clockMinute).padStart(2,'0'); md.style.background = clockMode === 'minute' ? accent : surf2; md.style.color = clockMode === 'minute' ? '#F1F1F5' : textCol; }
+  if (ab) { ab.style.background = clockAmPm === 'AM' ? accent : surf2; ab.style.color = clockAmPm === 'AM' ? '#F1F1F5' : textCol; }
+  if (pb) { pb.style.background = clockAmPm === 'PM' ? accent : surf2; pb.style.color = clockAmPm === 'PM' ? '#F1F1F5' : textCol; }
+  if (ht) ht.textContent = clockMode === 'hour' ? 'Tap an hour' : 'Tap a minute';
+}
+
+function applyClockTime() {
+  const h24 = to24(clockHour, clockAmPm);
+  const val24 = `${String(h24).padStart(2,'0')}:${String(clockMinute).padStart(2,'0')}`;
+  const display = fmt12(clockHour, clockMinute, clockAmPm);
+  const hiddenId = clockTargetId === 'cal' ? 'cal-time' : 'modal-cal-time';
+  const btnId    = clockTargetId === 'cal' ? 'cal-time-btn' : 'modal-cal-time-btn';
+  document.getElementById(hiddenId).value = val24;
+  const btn = document.getElementById(btnId);
+  if (btn) btn.textContent = display;
+  document.getElementById('clock-modal').classList.add('hidden');
+}
+
 const fieldLinkFns = {
   name:    v => v,
   email:   v => `<a href="mailto:${v}">${v}</a>`,
@@ -1127,7 +1347,9 @@ async function generateEmailDraft() {
         contact: currentData,
         notes,
         paragraphs: selectedParaCount,
-        tone: selectedTone
+        tone: selectedTone,
+        followUpDate: document.getElementById('cal-date').value || null,
+        followUpTime: document.getElementById('cal-time').value || null
       })
     });
 
@@ -1178,6 +1400,10 @@ function confirmFollowUpDate() {
     document.getElementById('cal-date').value = pendingFollowUpDate;
     if (pendingFollowUpTime) {
       document.getElementById('cal-time').value = pendingFollowUpTime;
+      const [h24, m] = pendingFollowUpTime.split(':').map(Number);
+      const { h, ap } = from24(h24);
+      const btn = document.getElementById('cal-time-btn');
+      if (btn) btn.textContent = fmt12(h, m, ap);
     }
     showToast('Follow-up date & time updated ✓');
     pendingFollowUpDate = null;
@@ -1190,20 +1416,27 @@ function useDifferentDate() {
   document.getElementById('date-confirm-modal').classList.add('hidden');
   pendingFollowUpDate = null;
   pendingFollowUpTime = null;
-  // Pre-fill modal with current calendar values so user can adjust from there
   const currentDate = document.getElementById('cal-date').value;
   const currentTime = document.getElementById('cal-time').value || '13:00';
   document.getElementById('modal-cal-date').value = currentDate;
   document.getElementById('modal-cal-time').value = currentTime;
+  const [h24, m] = currentTime.split(':').map(Number);
+  const { h, ap } = from24(h24);
+  const btn = document.getElementById('modal-cal-time-btn');
+  if (btn) btn.textContent = fmt12(h, m, ap);
   document.getElementById('date-picker-modal').classList.remove('hidden');
 }
 
 function applyCustomDate() {
   const date = document.getElementById('modal-cal-date').value;
-  const time = document.getElementById('modal-cal-time').value;
+  const time = document.getElementById('modal-cal-time').value || '13:00';
   if (!date) { showToast('Please pick a date first'); return; }
   document.getElementById('cal-date').value = date;
-  document.getElementById('cal-time').value = time || '13:00';
+  document.getElementById('cal-time').value = time;
+  const [h24, m] = time.split(':').map(Number);
+  const { h, ap } = from24(h24);
+  const btn = document.getElementById('cal-time-btn');
+  if (btn) btn.textContent = fmt12(h, m, ap);
   document.getElementById('date-picker-modal').classList.add('hidden');
   showToast('Follow-up date & time updated ✓');
 }
