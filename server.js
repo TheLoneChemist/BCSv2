@@ -1,4 +1,4 @@
-// card-scanner-api v1.6.0
+// card-scanner-api v1.7.0
 import express from 'express';
 import cors from 'cors';
 import Anthropic from '@anthropic-ai/sdk';
@@ -314,19 +314,22 @@ app.post('/generate-text', async (req, res) => {
   try {
     const msg = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 100,
+      max_tokens: 120,
       messages: [{
         role: 'user',
-        content: `Write a single short follow-up text message (SMS) based on these conversation notes.
+        content: `Write a short follow-up text message (SMS) based on these conversation notes.
 
 Contact first name: ${firstName}
 Notes: ${notes}
 
 Rules:
-- One sentence only, max 160 characters
+- 1 sentence if possible, 2 sentences maximum
 - Casual, warm, natural — like a real text message
 - Reference the conversation briefly
+- If a specific follow-up date, time, or meeting is mentioned in the notes, include it naturally in the message
 - No sign-off or name needed
+- NO emojis — none at all
+- No exclamation marks unless absolutely natural
 - Output ONLY the message text, nothing else`
       }]
     });
