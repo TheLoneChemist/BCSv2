@@ -1,4 +1,4 @@
-// card-scanner-api v1.2.0
+// card-scanner-api v1.3.0
 import express from 'express';
 import cors from 'cors';
 import Anthropic from '@anthropic-ai/sdk';
@@ -234,12 +234,22 @@ Instructions:
         max_tokens: 100,
         messages: [{
           role: 'user',
-          content: `Today is ${today}. Read the following conversation notes and determine if a specific follow-up date or timeframe is mentioned (e.g. "next Tuesday", "in two weeks", "March 15th", "end of month").
+          content: `Today is ${today}. Read the following conversation notes and extract two things:
 
-If a date or timeframe is found, return ONLY a JSON object with one key: "followUpDate" as an ISO 8601 date string (YYYY-MM-DD), calculated relative to today.
-If no date or timeframe is mentioned, return: {"followUpDate": null}
+1. Follow-up DATE: If a specific date or timeframe is mentioned (e.g. "next Tuesday", "in two weeks", "March 15th"), resolve it to a YYYY-MM-DD date relative to today. Otherwise null.
 
-Reply with raw JSON only. No markdown, no explanation.
+2. Follow-up TIME: Infer a sensible time based on context clues:
+   - "coffee" or "breakfast" → "10:00"
+   - "lunch" → "12:00"
+   - "afternoon" → "14:00"
+   - "drinks", "happy hour" → "18:00"
+   - "dinner" → "19:00"
+   - "morning meeting" or "call" → "09:00"
+   - A specific time is mentioned (e.g. "3pm") → use that time in 24h format
+   - No context clue → null (do not guess)
+
+Reply ONLY with raw JSON: {"followUpDate": "YYYY-MM-DD" or null, "followUpTime": "HH:MM" or null}
+No markdown, no explanation.
 
 Conversation notes:
 ${notes}`
@@ -250,6 +260,7 @@ ${notes}`
     const emailText = emailMsg.content.map(b => b.text || '').join('').trim();
 
     let followUpDate = null;
+    let followUpTime = null;
     try {
       const dateRaw = dateMsg.content.map(b => b.text || '').join('').trim();
       const s = dateRaw.indexOf('{');
@@ -257,10 +268,11 @@ ${notes}`
       if (s !== -1 && e !== -1) {
         const parsed = JSON.parse(dateRaw.slice(s, e + 1));
         followUpDate = parsed.followUpDate || null;
+        followUpTime = parsed.followUpTime || null;
       }
     } catch { /* date extraction failed silently — not critical */ }
 
-    res.json({ email: emailText, followUpDate });
+    res.json({ email: emailText, followUpDate, followUpTime });
   } catch (err) {
     console.error('Error:', err.status, err.message, JSON.stringify(err.error));
     res.status(500).json({ error: err.message });
