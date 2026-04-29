@@ -1,4 +1,4 @@
-<!-- card-scanner v1.45.0 -->
+<!-- card-scanner v1.46.0 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -652,6 +652,15 @@
         onfocus="this.style.borderColor='var(--accent2)'"
         onblur="this.style.borderColor='var(--border)'">
     </div>
+  </div>
+
+  <!-- Include notes toggle -->
+  <div class="toggle-row" style="margin-top:14px;">
+    <span class="toggle-label">Include conversation notes in reminder</span>
+    <label class="toggle-switch">
+      <input type="checkbox" id="include-notes-toggle" checked>
+      <span class="toggle-track"></span>
+    </label>
   </div>
 
   <button class="action-btn wide primary" id="cal-btn" onclick="createCalendarEvent()" style="margin-top:12px;">
@@ -1468,7 +1477,8 @@ function createCalendarEvent() {
   const endStr = fmt(end);
 
   const notes = document.getElementById('notes-field').value.trim();
-  let description = notes ? `Conversation notes:\n${notes}` : '';
+  const includeNotes = document.getElementById('include-notes-toggle').checked;
+  let description = (includeNotes && notes) ? `Conversation notes:\n${notes}` : '';
   if (emailDraftText) description += (description ? '\n\n' : '') + `Suggested follow-up email:\n${emailDraftText}`;
 
   // Build attendees
@@ -1742,6 +1752,8 @@ function reset() {
   if (teamToggle) { teamToggle.checked = false; }
   document.getElementById('team-input-wrap').style.display = 'none';
   document.getElementById('invite-other-input').value = '';
+  const includeNotesToggle = document.getElementById('include-notes-toggle');
+  if (includeNotesToggle) includeNotesToggle.checked = true;
   document.getElementById('file-camera').value = '';
   document.getElementById('file-library').value = '';
   document.getElementById('notes-field').value = '';
