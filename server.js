@@ -1,4 +1,4 @@
-// card-scanner-api v1.4.0
+// card-scanner-api v1.5.0
 import express from 'express';
 import cors from 'cors';
 import Anthropic from '@anthropic-ai/sdk';
@@ -90,14 +90,19 @@ app.post('/read-card', async (req, res) => {
             text: `Extract contact information from this business card image.
 Reply ONLY with raw JSON, no markdown, no explanation, no code blocks.
 
-Required JSON keys: name, title, company, email, phone, website
+Required JSON keys: name, title, company, email, phones, website
 
 Rules:
 - "name" must ONLY be an individual human's personal name (e.g. "Gary Sturn" or "Gary M. Sturn MD") — NEVER a business, practice, or organization name
 - Look for a personal name near a job title like "MD", "PhD", "CEO", "Director", etc. — that person's name goes in "name"
 - "company" is for the business/organization name (e.g. "Altamonte Medical Associates P.A.")
 - If the card has both a personal name AND a company name, both fields must be populated
-- Use empty string "" for any field not found
+- "phones" must be an array of objects with "type" and "number" keys
+- Phone types: "office", "cell", "fax", "toll-free", "home", "other" — infer from labels or context
+- If a number has no label, default type to "office"
+- Example: [{"type":"office","number":"(407) 339-5600"},{"type":"fax","number":"(407) 339-5602"}]
+- Use empty string "" for name/title/company/email/website if not found
+- Use empty array [] for phones if none found
 - Do not wrap output in backticks or markdown`
           }
         ]
@@ -147,12 +152,15 @@ app.post('/read-card-qr', async (req, res) => {
             text: `Decode the QR code in this image and extract any contact information from it.
 Reply ONLY with raw JSON, no markdown, no explanation, no code blocks.
 
-Required JSON keys: name, title, company, email, phone, website, qrData
+Required JSON keys: name, title, company, email, phones, website, qrData
 
 Rules:
 - "qrData" should contain the raw decoded QR code string (URL, vCard text, etc.)
 - Populate the other fields if the QR data contains contact info (e.g. a vCard or hCard URL)
-- Use empty string "" for any field not found
+- "phones" must be an array of objects: [{"type":"office","number":"..."}]
+- Phone types: "office", "cell", "fax", "toll-free", "home", "other"
+- Use empty array [] for phones if none found
+- Use empty string "" for other fields not found
 - Do not wrap output in backticks or markdown`
           }
         ]
