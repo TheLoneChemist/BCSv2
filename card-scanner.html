@@ -1,4 +1,4 @@
-<!-- card-scanner v1.37.0 -->
+<!-- card-scanner v1.38.0 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -423,7 +423,9 @@
     <div class="modal-title">✉️ Suggested Follow-up</div>
     <div class="modal-subtitle">Generated from your conversation notes</div>
     <div class="email-draft" id="email-draft-content"></div>
-    <button class="modal-btn primary" onclick="copyEmailDraft()">Copy email draft</button>
+    <div id="mailto-truncate-notice" style="display:none;font-size:12px;color:var(--muted);text-align:center;padding:2px 0;">Draft is long — your mail app may truncate it. Use "Copy" to paste the full text.</div>
+    <button class="modal-btn primary" onclick="openInMailApp()">Open in mail app</button>
+    <button class="modal-btn secondary" onclick="copyEmailDraft()">Copy draft</button>
     <button class="modal-btn cancel" onclick="document.getElementById('email-modal').classList.add('hidden')">Close</button>
   </div>
 </div>
@@ -1618,6 +1620,28 @@ function applyCustomDate() {
   if (btn) btn.textContent = fmt12(h, m, ap);
   document.getElementById('date-picker-modal').classList.add('hidden');
   showToast('Follow-up date & time updated ✓');
+}
+
+function openInMailApp() {
+  if (!emailDraftText) return;
+  const to = (currentData && currentData.email) ? encodeURIComponent(currentData.email) : '';
+  const name = (currentData && currentData.name) ? currentData.name : '';
+  const subject = encodeURIComponent(`Following up${name ? ' — ' + name : ''}`);
+
+  // mailto body is limited to ~1900 chars to stay safe across OS/browsers
+  const LIMIT = 1900;
+  let body = emailDraftText;
+  let truncated = false;
+  if (body.length > LIMIT) {
+    body = body.slice(0, LIMIT) + '\n\n[— continued —]';
+    truncated = true;
+  }
+
+  const notice = document.getElementById('mailto-truncate-notice');
+  if (notice) notice.style.display = truncated ? 'block' : 'none';
+
+  const mailto = `mailto:${to}?subject=${subject}&body=${encodeURIComponent(body)}`;
+  window.location.href = mailto;
 }
 
 function copyEmailDraft() {
