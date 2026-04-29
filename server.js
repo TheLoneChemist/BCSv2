@@ -1,4 +1,4 @@
-// card-scanner-api v1.5.0
+// card-scanner-api v1.6.0
 import express from 'express';
 import cors from 'cors';
 import Anthropic from '@anthropic-ai/sdk';
@@ -297,6 +297,41 @@ ${notes}`
     } catch { /* date extraction failed silently — not critical */ }
 
     res.json({ email: emailText, followUpDate, followUpTime });
+  } catch (err) {
+    console.error('Error:', err.status, err.message, JSON.stringify(err.error));
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Generate one-line follow-up text message suggestion
+app.post('/generate-text', async (req, res) => {
+  const { contact, notes } = req.body;
+  if (!notes) return res.status(400).json({ error: 'Missing notes' });
+
+  const d = contact || {};
+  const firstName = (d.name || '').split(' ')[0] || 'there';
+
+  try {
+    const msg = await client.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 100,
+      messages: [{
+        role: 'user',
+        content: `Write a single short follow-up text message (SMS) based on these conversation notes.
+
+Contact first name: ${firstName}
+Notes: ${notes}
+
+Rules:
+- One sentence only, max 160 characters
+- Casual, warm, natural — like a real text message
+- Reference the conversation briefly
+- No sign-off or name needed
+- Output ONLY the message text, nothing else`
+      }]
+    });
+    const text = msg.content.map(b => b.text || '').join('').trim();
+    res.json({ message: text });
   } catch (err) {
     console.error('Error:', err.status, err.message, JSON.stringify(err.error));
     res.status(500).json({ error: err.message });
