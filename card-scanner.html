@@ -1,4 +1,4 @@
-<!-- card-scanner v1.21.0 -->
+<!-- card-scanner v1.22.0 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -155,8 +155,36 @@
   }
   .field-row:last-child { border-bottom: none; }
   .field-label { color: var(--muted); flex-shrink: 0; margin-right: 12px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; }
-  .field-value { color: var(--text); text-align: right; word-break: break-all; }
+  .field-value { color: var(--text); text-align: right; word-break: break-all; flex: 1; }
   .field-value a { color: var(--accent2); text-decoration: none; }
+
+  .edit-chip {
+    flex-shrink: 0; margin-left: 8px;
+    padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 500;
+    border: 1px solid var(--border2); background: transparent;
+    color: var(--muted); cursor: pointer; font-family: 'DM Sans', sans-serif;
+    transition: all 0.15s;
+  }
+  .edit-chip:hover { border-color: var(--accent2); color: var(--accent2); }
+
+  .field-input {
+    flex: 1; background: var(--surface2); border: 1px solid var(--accent);
+    border-radius: var(--radius-sm); color: var(--text);
+    font-family: 'DM Sans', sans-serif; font-size: 14px;
+    padding: 6px 10px; outline: none; text-align: right;
+    transition: border-color 0.15s; min-width: 0;
+  }
+  .field-input:focus { border-color: var(--accent2); }
+  .field-input::placeholder { color: var(--muted); font-size: 13px; }
+
+  .save-chip {
+    flex-shrink: 0; margin-left: 6px;
+    padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
+    border: 1px solid var(--accent); background: var(--accent);
+    color: #F1F1F5; cursor: pointer; font-family: 'DM Sans', sans-serif;
+    transition: background 0.15s;
+  }
+  .save-chip:hover { background: var(--accent2); border-color: var(--accent2); color: #0C0C12; }
 
   .action-row { display: flex; gap: 10px; margin-top: 16px; }
   .action-btn {
@@ -779,17 +807,37 @@ function showResult(d) {
   document.getElementById('res-title').textContent = d.title || '';
   document.getElementById('res-company').textContent = d.company || '';
 
-  const fields = [];
-  if (d.email) fields.push({ label: 'Email', value: `<a href="mailto:${d.email}">${d.email}</a>` });
-  if (d.phone) fields.push({ label: 'Phone', value: `<a href="tel:${d.phone}">${d.phone}</a>` });
+  // Always show name, email, phone — blank input if missing; edit chip if present
+  const fieldDefs = [
+    { key: 'name',  label: 'Name',  placeholder: 'Enter name…',  linkFn: null },
+    { key: 'email', label: 'Email', placeholder: 'Enter email…', linkFn: v => `<a href="mailto:${v}">${v}</a>` },
+    { key: 'phone', label: 'Phone', placeholder: 'Enter phone…', linkFn: v => `<a href="tel:${v}">${v}</a>` },
+  ];
   if (d.website) {
-    const url = d.website.startsWith('http') ? d.website : 'https://' + d.website;
-    fields.push({ label: 'Website', value: `<a href="${url}" target="_blank">${d.website}</a>` });
+    fieldDefs.push({ key: 'website', label: 'Website', placeholder: 'Enter website…',
+      linkFn: v => { const u = v.startsWith('http') ? v : 'https://'+v; return `<a href="${u}" target="_blank">${v}</a>`; }
+    });
   }
 
-  document.getElementById('fields').innerHTML = fields.map(f =>
-    `<div class="field-row"><span class="field-label">${f.label}</span><span class="field-value">${f.value}</span></div>`
-  ).join('');
+  document.getElementById('fields').innerHTML = fieldDefs.map(f => {
+    const val = (d[f.key] || '').trim();
+    const id = `field-${f.key}`;
+    if (val) {
+      const display = f.linkFn ? f.linkFn(val) : val;
+      return `<div class="field-row" id="row-${f.key}">
+        <span class="field-label">${f.label}</span>
+        <span class="field-value" id="${id}-display">${display}</span>
+        <button class="edit-chip" onclick="editField('${f.key}')">Edit</button>
+      </div>`;
+    } else {
+      return `<div class="field-row" id="row-${f.key}">
+        <span class="field-label">${f.label}</span>
+        <input class="field-input" id="${id}-input" placeholder="${f.placeholder}"
+          onkeydown="if(event.key==='Enter') saveField('${f.key}')">
+        <button class="save-chip" onclick="saveField('${f.key}')">Save</button>
+      </div>`;
+    }
+  }).join('');
 
   // Dim contact chips if no value available
   const phoneChip = document.getElementById('chip-phone');
@@ -808,7 +856,64 @@ function showResult(d) {
   resetBtn.style.display = 'block';
 }
 
-/* ─── Calendar ─────────────────────────────────────── */
+/* ─── Field editing ─────────────────────────────────── */
+const fieldLinkFns = {
+  name:    v => v,
+  email:   v => `<a href="mailto:${v}">${v}</a>`,
+  phone:   v => `<a href="tel:${v}">${v}</a>`,
+  website: v => { const u = v.startsWith('http') ? v : 'https://'+v; return `<a href="${u}" target="_blank">${v}</a>`; }
+};
+const fieldPlaceholders = {
+  name: 'Enter name…', email: 'Enter email…',
+  phone: 'Enter phone…', website: 'Enter website…'
+};
+
+function editField(key) {
+  const row = document.getElementById(`row-${key}`);
+  const displayEl = document.getElementById(`field-${key}-display`);
+  const currentVal = currentData[key] || '';
+  // Swap display + edit chip for input + save chip
+  displayEl.outerHTML = `<input class="field-input" id="field-${key}-input"
+    value="${currentVal}" placeholder="${fieldPlaceholders[key] || ''}"
+    onkeydown="if(event.key==='Enter') saveField('${key}')">`;
+  row.querySelector('.edit-chip').outerHTML =
+    `<button class="save-chip" onclick="saveField('${key}')">Save</button>`;
+  document.getElementById(`field-${key}-input`).focus();
+}
+
+function saveField(key) {
+  const input = document.getElementById(`field-${key}-input`);
+  if (!input) return;
+  const val = input.value.trim();
+  currentData[key] = val;
+
+  const row = document.getElementById(`row-${key}`);
+  const linkFn = fieldLinkFns[key] || (v => v);
+  if (val) {
+    input.outerHTML = `<span class="field-value" id="field-${key}-display">${linkFn(val)}</span>`;
+    row.querySelector('.save-chip').outerHTML =
+      `<button class="edit-chip" onclick="editField('${key}')">Edit</button>`;
+  } else {
+    input.outerHTML = `<input class="field-input" id="field-${key}-input"
+      placeholder="${fieldPlaceholders[key] || ''}"
+      onkeydown="if(event.key==='Enter') saveField('${key}')">`;
+  }
+
+  // Re-evaluate chip dimming after edit
+  const phoneChip = document.getElementById('chip-phone');
+  const emailChip = document.getElementById('chip-email');
+  if (phoneChip) phoneChip.classList.toggle('dimmed', !currentData.phone);
+  if (emailChip) emailChip.classList.toggle('dimmed', !currentData.email);
+
+  // Update header name if name was edited
+  if (key === 'name') {
+    document.getElementById('res-name').textContent = val || '—';
+    document.getElementById('avatar').textContent = initials(val);
+    const firstName = val.trim().split(/\s+/)[0];
+    const contactLabel = document.getElementById('contact-toggle-label');
+    if (contactLabel) contactLabel.textContent = firstName || 'Contact';
+  }
+}
 function createCalendarEvent() {
   if (!currentData) return;
   const name = currentData.name || 'Contact';
