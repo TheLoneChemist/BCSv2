@@ -1,4 +1,4 @@
-<!-- card-scanner v1.25.0 -->
+<!-- card-scanner v1.27.0 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -397,14 +397,16 @@
 <!-- Date confirmation modal -->
 <div class="modal-overlay hidden" id="date-confirm-modal">
   <div class="modal-sheet">
-    <div class="modal-title">📅 Follow-up date detected</div>
-    <div class="modal-subtitle" id="date-confirm-subtitle">A date was mentioned in your notes</div>
+    <div class="modal-title">📅 Follow-up detected</div>
+    <div class="modal-subtitle" id="date-confirm-subtitle">A date and time were mentioned in your notes</div>
     <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px;text-align:center;">
-      <div style="font-size:13px;color:var(--muted);margin-bottom:4px;">Detected date</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:4px;">Suggested date &amp; time</div>
       <div id="date-confirm-display" style="font-size:22px;font-family:'DM Serif Display',serif;color:var(--accent2);"></div>
+      <div id="time-confirm-display" style="font-size:15px;color:var(--text2);margin-top:4px;"></div>
     </div>
-    <button class="modal-btn primary" onclick="confirmFollowUpDate()">Use this date</button>
-    <button class="modal-btn cancel" onclick="document.getElementById('date-confirm-modal').classList.add('hidden')">Keep current date</button>
+    <button class="modal-btn primary" onclick="confirmFollowUpDate()">Use this date &amp; time</button>
+    <button class="modal-btn secondary" onclick="useDifferentDate()">Use a different date</button>
+    <button class="modal-btn cancel" onclick="document.getElementById('date-confirm-modal').classList.add('hidden')">No thank you</button>
   </div>
 </div>
 
@@ -568,6 +570,7 @@ let selectedParaCount = 3;
 let selectedTone = 'professional';
 let emailDraftText = '';
 let pendingFollowUpDate = null;
+let pendingFollowUpTime = null;
 
 const preview = document.getElementById('preview');
 const scanBtn = document.getElementById('scan-btn');
@@ -1118,12 +1121,26 @@ async function generateEmailDraft() {
     // If a follow-up date was detected, ask the user to confirm before setting
     if (data.followUpDate) {
       pendingFollowUpDate = data.followUpDate;
+      pendingFollowUpTime = data.followUpTime || null;
       const formatted = new Date(data.followUpDate + 'T12:00:00')
         .toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
       document.getElementById('date-confirm-display').textContent = formatted;
-      document.getElementById('date-confirm-subtitle').textContent =
-        'We found a date mentioned in your notes. Would you like to use it?';
-      // Show after email modal closes, slight delay feels natural
+
+      // Format time for display
+      const timeDisplay = document.getElementById('time-confirm-display');
+      if (data.followUpTime) {
+        const [h, m] = data.followUpTime.split(':').map(Number);
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        const h12 = h % 12 || 12;
+        timeDisplay.textContent = `${h12}:${String(m).padStart(2,'0')} ${ampm}`;
+        document.getElementById('date-confirm-subtitle').textContent =
+          'A date and time were suggested in your notes. Does this look right?';
+      } else {
+        timeDisplay.textContent = '';
+        document.getElementById('date-confirm-subtitle').textContent =
+          'A date was mentioned in your notes. Does this look right?';
+      }
+
       setTimeout(() => {
         document.getElementById('date-confirm-modal').classList.remove('hidden');
       }, 400);
@@ -1139,10 +1156,24 @@ async function generateEmailDraft() {
 function confirmFollowUpDate() {
   if (pendingFollowUpDate) {
     document.getElementById('cal-date').value = pendingFollowUpDate;
-    showToast('Follow-up date updated ✓');
+    if (pendingFollowUpTime) {
+      document.getElementById('cal-time').value = pendingFollowUpTime;
+    }
+    showToast('Follow-up date & time updated ✓');
     pendingFollowUpDate = null;
+    pendingFollowUpTime = null;
   }
   document.getElementById('date-confirm-modal').classList.add('hidden');
+}
+
+function useDifferentDate() {
+  document.getElementById('date-confirm-modal').classList.add('hidden');
+  pendingFollowUpDate = null;
+  // Scroll to and focus the date picker
+  const calDate = document.getElementById('cal-date');
+  calDate.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  setTimeout(() => calDate.focus(), 400);
+  showToast('Pick a date below');
 }
 
 function copyEmailDraft() {
@@ -1191,6 +1222,7 @@ function reset() {
   selectedFile = null; pendingQRText = null; pendingBase64 = null; pendingMediaType = null;
   emailDraftText = '';
   pendingFollowUpDate = null;
+  pendingFollowUpTime = null;
   selectedParaCount = 3;
   selectedTone = 'professional';
   document.querySelectorAll('[data-para]').forEach(c => {
