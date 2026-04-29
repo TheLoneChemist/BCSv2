@@ -1,4 +1,4 @@
-<!-- card-scanner v1.41.0 -->
+<!-- card-scanner v1.45.0 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -80,22 +80,6 @@
     width: 100%; border-radius: var(--radius);
     max-height: 240px; object-fit: contain;
     border: 1px solid var(--border); background: var(--surface); display: block;
-  }
-  .overlay-rect {
-    position: absolute; top: 8%; left: 6%;
-    width: 88%; height: 84%;
-    border: 1px solid rgba(200,200,200,0.3);
-    border-radius: 4px; pointer-events: none;
-  }
-  .overlay-ch {
-    position: absolute; top: 50%; left: 5%;
-    width: 90%; height: 1px;
-    background: rgba(200,200,200,0.25); pointer-events: none;
-  }
-  .overlay-cv {
-    position: absolute; left: 50%; top: 5%;
-    height: 90%; width: 1px;
-    background: rgba(200,200,200,0.25); pointer-events: none;
   }
   .scan-btn {
     width: 100%; max-width: 440px; padding: 17px;
@@ -355,6 +339,7 @@
 
 <h1>Card Scanner</h1>
 <p class="subtitle">Scan a business card or QR code</p>
+<p style="font-size:13px;color:var(--muted);text-align:center;margin-top:-6px;">Make sure the card is right-side up when scanned.</p>
 
 <div class="upload-area" id="upload-area">
   <div class="upload-icon">
@@ -378,9 +363,6 @@
 
 <div class="preview-wrap" id="preview-wrap">
   <img id="preview" alt="Card preview">
-  <div class="overlay-rect"></div>
-  <div class="overlay-ch"></div>
-  <div class="overlay-cv"></div>
 </div>
 <div id="retake-row" style="display:none; width:100%; max-width:440px; display:none; gap:10px; margin-top: -4px;">
   <button class="action-btn" style="flex:1;" onclick="document.getElementById('file-camera').click()">📷 Retake photo</button>
@@ -531,7 +513,7 @@
       font-size:13px; cursor:pointer; transition:border-color 0.15s, color 0.15s;
     " onmouseover="this.style.borderColor='var(--border2)';this.style.color='var(--text2)'"
        onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
-      ← Scanned wrong option? Go back to QR choice
+      ← Back
     </button>
   </div>
   <div class="result-header">
@@ -751,6 +733,17 @@ function onContactToggle(checked) {
     selectedInvite.delete('phone');
     selectedInvite.delete('email');
     document.querySelectorAll('.invite-chip').forEach(c => c.classList.remove('active'));
+  } else {
+    // Default to email if available, otherwise first populated phone
+    const hasEmail = !!(currentData && currentData.email);
+    const phones = (currentData && currentData.phones) || [];
+    const firstPhone = phones.find(p => p.number);
+    if (hasEmail) {
+      toggleInvite('email');
+    } else if (firstPhone) {
+      const idx = phones.indexOf(firstPhone);
+      toggleInvite(`phone-${idx}`);
+    }
   }
   updateCalBtn();
 }
