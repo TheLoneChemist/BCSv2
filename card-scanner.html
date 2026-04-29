@@ -1,4 +1,4 @@
-<!-- card-scanner v1.27.0 -->
+<!-- card-scanner v1.28.0 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -407,6 +407,26 @@
     <button class="modal-btn primary" onclick="confirmFollowUpDate()">Use this date &amp; time</button>
     <button class="modal-btn secondary" onclick="useDifferentDate()">Use a different date</button>
     <button class="modal-btn cancel" onclick="document.getElementById('date-confirm-modal').classList.add('hidden')">No thank you</button>
+  </div>
+</div>
+
+<!-- Date picker modal -->
+<div class="modal-overlay hidden" id="date-picker-modal">
+  <div class="modal-sheet">
+    <div class="modal-title">📅 Choose a date &amp; time</div>
+    <div class="modal-subtitle">Set your preferred follow-up date and time</div>
+    <div style="display:flex;flex-direction:column;gap:12px;margin-top:4px;">
+      <div>
+        <div class="cal-label" style="margin-bottom:6px;">Date</div>
+        <input type="date" id="modal-cal-date" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;padding:12px;outline:none;color-scheme:dark;transition:border-color 0.15s;" onfocus="this.style.borderColor='var(--accent2)'" onblur="this.style.borderColor='var(--border)'">
+      </div>
+      <div>
+        <div class="cal-label" style="margin-bottom:6px;">Time</div>
+        <input type="time" id="modal-cal-time" value="13:00" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;padding:12px;outline:none;color-scheme:dark;transition:border-color 0.15s;" onfocus="this.style.borderColor='var(--accent2)'" onblur="this.style.borderColor='var(--border)'">
+      </div>
+    </div>
+    <button class="modal-btn primary" onclick="applyCustomDate()" style="margin-top:4px;">Set date &amp; time</button>
+    <button class="modal-btn cancel" onclick="document.getElementById('date-picker-modal').classList.add('hidden')">Cancel</button>
   </div>
 </div>
 
@@ -1169,11 +1189,23 @@ function confirmFollowUpDate() {
 function useDifferentDate() {
   document.getElementById('date-confirm-modal').classList.add('hidden');
   pendingFollowUpDate = null;
-  // Scroll to and focus the date picker
-  const calDate = document.getElementById('cal-date');
-  calDate.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  setTimeout(() => calDate.focus(), 400);
-  showToast('Pick a date below');
+  pendingFollowUpTime = null;
+  // Pre-fill modal with current calendar values so user can adjust from there
+  const currentDate = document.getElementById('cal-date').value;
+  const currentTime = document.getElementById('cal-time').value || '13:00';
+  document.getElementById('modal-cal-date').value = currentDate;
+  document.getElementById('modal-cal-time').value = currentTime;
+  document.getElementById('date-picker-modal').classList.remove('hidden');
+}
+
+function applyCustomDate() {
+  const date = document.getElementById('modal-cal-date').value;
+  const time = document.getElementById('modal-cal-time').value;
+  if (!date) { showToast('Please pick a date first'); return; }
+  document.getElementById('cal-date').value = date;
+  document.getElementById('cal-time').value = time || '13:00';
+  document.getElementById('date-picker-modal').classList.add('hidden');
+  showToast('Follow-up date & time updated ✓');
 }
 
 function copyEmailDraft() {
