@@ -1,4 +1,4 @@
-<!-- card-scanner v1.38.0 -->
+<!-- card-scanner v1.40.0 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -522,6 +522,18 @@
 
 <!-- Result card -->
 <div class="result-card" id="result-card">
+  <!-- Back to QR option — shown only when QR was detected -->
+  <div id="rescan-qr-row" style="display:none; margin-bottom:12px;">
+    <button onclick="reopenQRModal()" style="
+      width:100%; padding:10px; border-radius:var(--radius-sm);
+      background:transparent; border:1px solid var(--border);
+      color:var(--muted); font-family:'DM Sans',sans-serif;
+      font-size:13px; cursor:pointer; transition:border-color 0.15s, color 0.15s;
+    " onmouseover="this.style.borderColor='var(--border2)';this.style.color='var(--text2)'"
+       onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
+      ← Scanned wrong option? Go back to QR choice
+    </button>
+  </div>
   <div class="result-header">
     <div class="avatar" id="avatar">?</div>
     <div>
@@ -539,7 +551,7 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
     Conversation notes
   </div>
-  <textarea class="notes-field" id="notes-field" placeholder="What did you talk about? Any key takeaways, promises, or context… These notes will be used to generate your follow-up email and saved to the contact on your phone. If you mention a follow-up date (e.g. &quot;coffee next Tuesday&quot; or &quot;call in two weeks&quot;), it will be included in the email and used to create a calendar reminder." style="min-height: 140px;"></textarea>
+  <textarea class="notes-field" id="notes-field" placeholder="What did you talk about? Any key takeaways, promises, dates, or context… These notes will be used to generate your follow-up email, your follow-up reminder, and will be saved to the contact on your phone." style="min-height: 140px;"></textarea>
 
   <hr class="section-sep">
   <div class="section-title" style="margin-bottom: 10px;">
@@ -689,6 +701,7 @@ let selectedTone = 'professional';
 let emailDraftText = '';
 let pendingFollowUpDate = null;
 let pendingFollowUpTime = null;
+let pendingQRScanned = false; // tracks if user arrived via a QR choice
 
 const preview = document.getElementById('preview');
 const scanBtn = document.getElementById('scan-btn');
@@ -780,6 +793,7 @@ function setTone(val) {
 document.getElementById('modal-use-qr').addEventListener('click', () => {
   hideModal();
   if (!pendingQRText) return;
+  pendingQRScanned = true;
   const parsed = parseQRText(pendingQRText);
   if (parsed) { currentData = parsed; showResult(parsed); }
   else showError('Could not extract contact info from QR code.');
@@ -788,6 +802,7 @@ document.getElementById('modal-use-qr').addEventListener('click', () => {
 
 document.getElementById('modal-use-text').addEventListener('click', async () => {
   hideModal();
+  pendingQRScanned = true;
   await scanViaAPI(pendingBase64, pendingMediaType);
   scanBtn.disabled = false;
 });
@@ -797,6 +812,17 @@ document.getElementById('modal-cancel').addEventListener('click', () => {
   status.textContent = '';
   scanBtn.disabled = false;
 });
+
+function reopenQRModal() {
+  // Clear current result and re-show the QR choice modal
+  currentData = null;
+  resultCard.style.display = 'none';
+  document.getElementById('rescan-qr-row').style.display = 'none';
+  document.getElementById('notes-field').value = '';
+  document.getElementById('fields').innerHTML = '';
+  showModal();
+  scanBtn.disabled = true;
+}
 
 function classifyQR(text) {
   if (!text) return null;
@@ -1065,6 +1091,9 @@ function showResult(d) {
   if (emailChip) emailChip.classList.toggle('dimmed', !d.email);
 
   setDefaultDate();
+  // Show back-to-QR button only when user arrived via QR choice
+  const rescanRow = document.getElementById('rescan-qr-row');
+  if (rescanRow) rescanRow.style.display = pendingQRScanned ? 'block' : 'none';
   resultCard.style.display = 'flex';
   resultCard.style.flexDirection = 'column';
   resetBtn.style.display = 'block';
@@ -1697,6 +1726,7 @@ function reset() {
   emailDraftText = '';
   pendingFollowUpDate = null;
   pendingFollowUpTime = null;
+  pendingQRScanned = false;
   selectedParaCount = 3;
   selectedTone = 'professional';
   document.querySelectorAll('[data-para]').forEach(c => {
