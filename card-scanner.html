@@ -1,4 +1,4 @@
-<!-- card-scanner v1.34.0 -->
+<!-- card-scanner v1.35.0 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -611,10 +611,8 @@
     </div>
     <div id="contact-chips-wrap" style="display:none; margin-top:8px;">
       <div class="cal-label" style="margin-bottom:6px;">Send via</div>
-      <div class="invite-options" id="phone-chip-options">
+      <div class="invite-options" id="contact-send-chips">
         <button class="invite-chip dimmed" id="chip-phone" data-invite="phone-0" onclick="toggleInvite('phone-0')">Phone</button>
-      </div>
-      <div class="invite-options" style="margin-top:6px;">
         <button class="invite-chip" id="chip-email" data-invite="email" onclick="toggleInvite('email')">E-mail</button>
       </div>
     </div>
@@ -1328,27 +1326,32 @@ function savePhoneField(i) {
 
 function updatePhoneChips() {
   const phones = (currentData && currentData.phones) || [];
-  const hasPhone = phones.some(p => p.number);
-  const wrap = document.getElementById('contact-chips-wrap');
-  const phoneChipWrap = document.getElementById('phone-chip-options');
+  const hasEmail = !!(currentData && currentData.email);
+  const chipWrap = document.getElementById('contact-send-chips');
+  if (!chipWrap) return;
 
-  // Replace the single Phone chip with a dynamic list if multiple numbers
-  if (phoneChipWrap) {
-    if (phones.length <= 1) {
-      const chip = document.getElementById('chip-phone');
-      if (chip) chip.classList.toggle('dimmed', !hasPhone);
-    } else {
-      phoneChipWrap.innerHTML = phones.map((p, i) => {
-        const label = p.type.charAt(0).toUpperCase() + p.type.slice(1);
-        return `<button class="invite-chip${!p.number ? ' dimmed' : ''}" 
-          data-invite="phone-${i}" onclick="toggleInvite('phone-${i}')">
-          ${label}
-        </button>`;
-      }).join('');
-    }
+  // Only include phones that actually have a number
+  const populated = phones.filter(p => p.number);
+
+  // Build phone chips — use type label if we have more than one number, else just "Phone"
+  const useLabels = populated.length > 1;
+  const phoneChips = populated.map((p, i) => {
+    const idx = phones.indexOf(p);
+    const label = useLabels
+      ? p.type.charAt(0).toUpperCase() + p.type.slice(1)
+      : 'Phone';
+    return `<button class="invite-chip" data-invite="phone-${idx}" onclick="toggleInvite('phone-${idx}')">${label}</button>`;
+  });
+
+  // Always include email chip, dimmed if no email
+  const emailChip = `<button class="invite-chip${hasEmail ? '' : ' dimmed'}" id="chip-email" data-invite="email" onclick="toggleInvite('email')">E-mail</button>`;
+
+  // If no phones at all, show a dimmed generic Phone chip so the row isn't empty
+  if (populated.length === 0) {
+    chipWrap.innerHTML = `<button class="invite-chip dimmed" id="chip-phone" data-invite="phone-0">Phone</button>${emailChip}`;
+  } else {
+    chipWrap.innerHTML = phoneChips.join('') + emailChip;
   }
-  const emailChip = document.getElementById('chip-email');
-  if (emailChip) emailChip.classList.toggle('dimmed', !(currentData && currentData.email));
 }
 
 function editField(key) {
