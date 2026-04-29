@@ -1,4 +1,4 @@
-<!-- card-scanner v1.33.0 -->
+<!-- card-scanner v1.34.0 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -992,7 +992,7 @@ function showResult(d) {
       return `<div class="field-row" id="row-${f.key}">
         <span class="field-label">${f.label}</span>
         <span class="field-value" id="${id}-display">${display}</span>
-        <button class="edit-chip" onclick="editField('${f.key}')">✏️</button>
+        <button class="edit-chip" onclick="editField('${f.key}')">Edit</button>
       </div>`;
     } else {
       return `<div class="field-row" id="row-${f.key}">
@@ -1013,7 +1013,7 @@ function showResult(d) {
         <span class="field-value" id="field-phone-${i}-display">
           <a href="tel:${p.number}">${p.number}</a>
         </span>
-        <button class="edit-chip" onclick="editPhoneField(${i})">✏️</button>
+        <button class="edit-chip" onclick="editPhoneField(${i})">Edit</button>
       </div>`;
     });
   } else {
@@ -1315,7 +1315,7 @@ function savePhoneField(i) {
     row.innerHTML = `
       <span class="field-label">${typeLabel}</span>
       <span class="field-value" id="field-phone-${i}-display"><a href="tel:${val}">${val}</a></span>
-      <button class="edit-chip" onclick="editPhoneField(${i})">✏️</button>`;
+      <button class="edit-chip" onclick="editPhoneField(${i})">Edit</button>`;
   } else {
     row.innerHTML = `
       <span class="field-label">${typeLabel}</span>
@@ -1376,7 +1376,7 @@ function saveField(key) {
   if (val) {
     input.outerHTML = `<span class="field-value" id="field-${key}-display">${linkFn(val)}</span>`;
     row.querySelector('.save-chip').outerHTML =
-      `<button class="edit-chip" onclick="editField('${key}')">✏️</button>`;
+      `<button class="edit-chip" onclick="editField('${key}')">Edit</button>`;
   } else {
     input.outerHTML = `<input class="field-input" id="field-${key}-input"
       placeholder="${fieldPlaceholders[key] || ''}"
