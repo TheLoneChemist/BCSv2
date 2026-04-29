@@ -1,4 +1,4 @@
-// card-scanner-api v1.3.0
+// card-scanner-api v1.4.0
 import express from 'express';
 import cors from 'cors';
 import Anthropic from '@anthropic-ai/sdk';
@@ -180,7 +180,7 @@ Rules:
 
 // Generate follow-up email draft from conversation notes
 app.post('/generate-email', async (req, res) => {
-  const { contact, notes, paragraphs, tone } = req.body;
+  const { contact, notes, paragraphs, tone, followUpDate, followUpTime } = req.body;
 
   if (!notes) {
     return res.status(400).json({ error: 'Missing notes' });
@@ -198,6 +198,22 @@ app.post('/generate-email', async (req, res) => {
     donor: 'tailored for a donor — grateful, mission-driven, and relationship-focused',
   };
   const toneDesc = toneMap[tone] || (tone && tone !== 'other' ? tone : 'professional and polished');
+
+  // Format date/time for inclusion in the prompt
+  let dateTimeHint = '';
+  if (followUpDate) {
+    const dateObj = new Date(followUpDate + 'T12:00:00');
+    const dateStr = dateObj.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    if (followUpTime) {
+      const [h24, m] = followUpTime.split(':').map(Number);
+      const ap = h24 >= 12 ? 'PM' : 'AM';
+      const h12 = h24 % 12 || 12;
+      const timeStr = `${h12}:${String(m).padStart(2,'0')} ${ap}`;
+      dateTimeHint = `\n- Propose the follow-up meeting for ${dateStr} at ${timeStr} — work this into the email naturally`;
+    } else {
+      dateTimeHint = `\n- Propose the follow-up meeting for ${dateStr} — work this into the email naturally`;
+    }
+  }
 
   try {
     // Run email generation and date extraction in parallel
@@ -222,7 +238,7 @@ Instructions:
 - Address them by first name (${firstName})
 - Reference the conversation naturally
 - Write EXACTLY ${paraCount} paragraph${paraCount > 1 ? 's' : ''} — no more, no fewer
-- End with a clear next step${paraCount === 1 ? ' (work it into the single paragraph)' : ''}
+- End with a clear next step${paraCount === 1 ? ' (work it into the single paragraph)' : ''}${dateTimeHint}
 - Don't use excessive pleasantries or filler
 - Sign off as "Best," then leave a blank line for my name
 - Output ONLY the email body, no subject line, no explanation`
