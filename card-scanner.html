@@ -1,4 +1,4 @@
-<!-- card-scanner v1.47.0 -->
+<!-- card-scanner v1.50.0 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -533,7 +533,7 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
     Conversation notes
   </div>
-  <textarea class="notes-field" id="notes-field" placeholder="What did you talk about? Any key takeaways, promises, dates, or context… These notes will be used to generate your follow-up email, your follow-up reminder, and will be saved to the contact on your phone." style="min-height: 140px;" oninput="scheduleTextSuggestion()"></textarea>
+  <textarea class="notes-field" id="notes-field" placeholder="What did you talk about? Any key takeaways, promises, dates, or context… These notes will be used to generate your follow-ups, and will be saved to the contact on your phone." style="min-height: 140px;" oninput="scheduleTextSuggestion()"></textarea>
 
   <hr class="section-sep">
   <div class="section-title" style="margin-bottom: 10px;">
@@ -621,7 +621,7 @@
 
   <!-- Include notes toggle -->
   <div class="toggle-row" style="margin-top:14px;">
-    <span class="toggle-label">Include conversation notes in reminder</span>
+    <span class="toggle-label">Include conversation notes in reminder?</span>
     <label class="toggle-switch">
       <input type="checkbox" id="include-notes-toggle" checked>
       <span class="toggle-track"></span>
@@ -638,22 +638,24 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
     Follow-up text message
   </div>
-  <div class="cal-row" style="margin-bottom:10px;">
-    <div class="cal-field">
-      <div class="cal-label">Date</div>
-      <input type="date" id="sms-date">
-    </div>
-    <div class="cal-field">
-      <div class="cal-label">Time</div>
-      <button id="sms-time-btn" onclick="openClock('sms')" style="
-        width:100%;background:var(--surface2);border:1px solid var(--border);
-        border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;
-        font-size:14px;padding:10px 12px;text-align:left;cursor:pointer;
-        transition:border-color 0.15s;
-      " onmouseover="this.style.borderColor='var(--accent2)'" onmouseout="this.style.borderColor='var(--border)'">
-        1:00 PM
-      </button>
-      <input type="hidden" id="sms-time" value="13:00">
+  <div id="sms-datetime-row" style="display:none; margin-bottom:10px;">
+    <div class="cal-row">
+      <div class="cal-field">
+        <div class="cal-label">Date</div>
+        <input type="date" id="sms-date">
+      </div>
+      <div class="cal-field">
+        <div class="cal-label">Time</div>
+        <button id="sms-time-btn" onclick="openClock('sms')" style="
+          width:100%;background:var(--surface2);border:1px solid var(--border);
+          border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;
+          font-size:14px;padding:10px 12px;text-align:left;cursor:pointer;
+          transition:border-color 0.15s;
+        " onmouseover="this.style.borderColor='var(--accent2)'" onmouseout="this.style.borderColor='var(--border)'">
+          1:00 PM
+        </button>
+        <input type="hidden" id="sms-time" value="13:00">
+      </div>
     </div>
   </div>
   <div id="sms-phone-row" style="display:none; margin-bottom:10px;">
@@ -1740,12 +1742,19 @@ async function generateEmailDraft() {
 function confirmFollowUpDate() {
   if (pendingFollowUpDate) {
     document.getElementById('cal-date').value = pendingFollowUpDate;
+    // Also set SMS date/time and show the row
+    document.getElementById('sms-date').value = pendingFollowUpDate;
+    document.getElementById('sms-datetime-row').style.display = 'block';
     if (pendingFollowUpTime) {
       document.getElementById('cal-time').value = pendingFollowUpTime;
+      document.getElementById('sms-time').value = pendingFollowUpTime;
       const [h24, m] = pendingFollowUpTime.split(':').map(Number);
       const { h, ap } = from24(h24);
-      const btn = document.getElementById('cal-time-btn');
-      if (btn) btn.textContent = fmt12(h, m, ap);
+      const display = fmt12(h, m, ap);
+      const calBtn = document.getElementById('cal-time-btn');
+      if (calBtn) calBtn.textContent = display;
+      const smsBtn = document.getElementById('sms-time-btn');
+      if (smsBtn) smsBtn.textContent = display;
     }
     showToast('Follow-up date & time updated ✓');
     pendingFollowUpDate = null;
@@ -1899,6 +1908,8 @@ function reset() {
   if (smsTimeHidden) smsTimeHidden.value = '13:00';
   const smsPhoneRow = document.getElementById('sms-phone-row');
   if (smsPhoneRow) smsPhoneRow.style.display = 'none';
+  const smsDatetimeRow = document.getElementById('sms-datetime-row');
+  if (smsDatetimeRow) smsDatetimeRow.style.display = 'none';
   selectedSmsPhoneIdx = 0;
   document.getElementById('gen-email-btn').innerHTML = 'Generate follow-up email';
   document.getElementById('gen-email-btn').disabled = false;
