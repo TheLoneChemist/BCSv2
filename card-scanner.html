@@ -1,4 +1,4 @@
-<!-- card-scanner v1.35.0 -->
+<!-- card-scanner v1.36.0 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -72,10 +72,30 @@
   .upload-label { font-size: 17px; font-weight: 500; text-align: center; }
   .upload-hint { font-size: 14px; color: var(--muted); text-align: center; }
 
-  .preview-img {
-    width: 100%; max-width: 440px; border-radius: var(--radius);
+  /* Preview overlay container */
+  .preview-wrap {
+    width: 100%; max-width: 440px; display: none; position: relative;
+  }
+  .preview-wrap img {
+    width: 100%; border-radius: var(--radius);
     max-height: 240px; object-fit: contain;
-    border: 1px solid var(--border); background: var(--surface); display: none;
+    border: 1px solid var(--border); background: var(--surface); display: block;
+  }
+  .overlay-rect {
+    position: absolute; top: 8%; left: 6%;
+    width: 88%; height: 84%;
+    border: 1px solid rgba(200,200,200,0.3);
+    border-radius: 4px; pointer-events: none;
+  }
+  .overlay-ch {
+    position: absolute; top: 50%; left: 5%;
+    width: 90%; height: 1px;
+    background: rgba(200,200,200,0.25); pointer-events: none;
+  }
+  .overlay-cv {
+    position: absolute; left: 50%; top: 5%;
+    height: 90%; width: 1px;
+    background: rgba(200,200,200,0.25); pointer-events: none;
   }
   .scan-btn {
     width: 100%; max-width: 440px; padding: 17px;
@@ -356,7 +376,12 @@
   <input type="file" id="file-library" accept="image/*" style="display:none">
 </div>
 
-<img id="preview" class="preview-img" alt="Card preview">
+<div class="preview-wrap" id="preview-wrap">
+  <img id="preview" alt="Card preview">
+  <div class="overlay-rect"></div>
+  <div class="overlay-ch"></div>
+  <div class="overlay-cv"></div>
+</div>
 <div id="retake-row" style="display:none; width:100%; max-width:440px; display:none; gap:10px; margin-top: -4px;">
   <button class="action-btn" style="flex:1;" onclick="document.getElementById('file-camera').click()">📷 Retake photo</button>
   <button class="action-btn" style="flex:1;" onclick="document.getElementById('file-library').click()">
@@ -825,7 +850,7 @@ function handleFileSelect(file) {
     const img = new Image();
     img.onload = () => {
       preview.src = e.target.result;
-      preview.style.display = 'block';
+      document.getElementById('preview-wrap').style.display = 'block';
       uploadArea.style.display = 'none';
       document.getElementById('retake-row').style.display = 'flex';
       scanBtn.style.display = 'block';
@@ -955,7 +980,7 @@ function initials(name) {
 function showResult(d) {
   status.textContent = '';
   scanBtn.style.display = 'none';
-  preview.style.display = 'block';
+  document.getElementById('preview-wrap').style.display = 'block';
 
   // Normalize: support legacy single `phone` string or new `phones` array
   if (!d.phones || !Array.isArray(d.phones)) {
@@ -1678,7 +1703,7 @@ function reset() {
   const calBtn = document.getElementById('cal-btn');
   calBtn.textContent = '📅 Add to calendar';
   calBtn.classList.add('primary'); calBtn.classList.remove('cal-created');
-  preview.style.display = 'none';
+  document.getElementById('preview-wrap').style.display = 'none';
   document.getElementById('retake-row').style.display = 'none';
   uploadArea.style.display = 'flex';
   scanBtn.style.display = 'none';
