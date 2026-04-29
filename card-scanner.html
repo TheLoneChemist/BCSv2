@@ -1,4 +1,4 @@
-<!-- card-scanner v1.31.0 -->
+<!-- card-scanner v1.33.0 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -375,6 +375,15 @@
       object-fit:contain; background:var(--surface2);
       border:1px solid var(--border); display:none; margin-bottom:4px;
     ">
+    <div id="qr-preview-badge" style="
+      display:none; align-items:center; gap:8px;
+      background:var(--surface2); border:1px solid var(--border);
+      border-radius:var(--radius-sm); padding:10px 13px;
+      font-size:13px; color:var(--text2); line-height:1.4;
+    ">
+      <span id="qr-preview-icon" style="font-size:18px; flex-shrink:0;"></span>
+      <span id="qr-preview-text" style="word-break:break-all;"></span>
+    </div>
     <div class="modal-title">QR Code Detected</div>
     <div class="modal-subtitle">How would you like to scan this card?</div>
     <button class="modal-btn primary" id="modal-use-qr">Scan QR code</button>
@@ -764,11 +773,47 @@ document.getElementById('modal-cancel').addEventListener('click', () => {
   scanBtn.disabled = false;
 });
 
+function classifyQR(text) {
+  if (!text) return null;
+  const t = text.trim();
+  if (t.startsWith('BEGIN:VCARD')) {
+    const fnLine = t.split(/\r?\n/).find(l => l.startsWith('FN:'));
+    const name = fnLine ? fnLine.slice(3).trim() : '';
+    return { icon: '', label: 'vCard contact' + (name ? ` — ${name}` : '') };
+  }
+  if (t.startsWith('https://') || t.startsWith('http://')) {
+    const display = t.length > 55 ? t.slice(0, 55) + '…' : t;
+    return { icon: '🔗', label: `Link — ${display}` };
+  }
+  if (t.startsWith('mailto:')) return { icon: '✉️', label: `Email — ${t.slice(7)}` };
+  if (t.startsWith('tel:'))    return { icon: '📱', label: `Phone — ${t.slice(4)}` };
+  if (t.toLowerCase().startsWith('smsto:') || t.toLowerCase().startsWith('sms:'))
+    return { icon: '💬', label: `SMS — ${t.split(':').slice(1).join(':')}` };
+  if (t.toUpperCase().startsWith('WIFI:')) {
+    const ssid = (t.match(/S:([^;]+)/i) || [])[1] || '';
+    return { icon: '', label: `Wi-Fi${ssid ? ` — ${ssid}` : ''}` };
+  }
+  const preview = t.length > 60 ? t.slice(0, 60) + '…' : t;
+  return { icon: '📄', label: `Text — ${preview}` };
+}
+
 function showModal() {
   const thumb = document.getElementById('qr-modal-thumb');
   if (thumb && preview.src) {
     thumb.src = preview.src;
     thumb.style.display = 'block';
+  }
+  const badge = document.getElementById('qr-preview-badge');
+  const iconEl = document.getElementById('qr-preview-icon');
+  const textEl = document.getElementById('qr-preview-text');
+  const classified = classifyQR(pendingQRText);
+  if (classified && badge && iconEl && textEl) {
+    iconEl.textContent = classified.icon;
+    iconEl.style.display = classified.icon ? 'inline' : 'none';
+    textEl.textContent = classified.label;
+    badge.style.display = 'flex';
+  } else if (badge) {
+    badge.style.display = 'none';
   }
   qrModal.classList.remove('hidden');
 }
@@ -947,7 +992,7 @@ function showResult(d) {
       return `<div class="field-row" id="row-${f.key}">
         <span class="field-label">${f.label}</span>
         <span class="field-value" id="${id}-display">${display}</span>
-        <button class="edit-chip" onclick="editField('${f.key}')">Edit</button>
+        <button class="edit-chip" onclick="editField('${f.key}')">✏️</button>
       </div>`;
     } else {
       return `<div class="field-row" id="row-${f.key}">
@@ -968,7 +1013,7 @@ function showResult(d) {
         <span class="field-value" id="field-phone-${i}-display">
           <a href="tel:${p.number}">${p.number}</a>
         </span>
-        <button class="edit-chip" onclick="editPhoneField(${i})">Edit</button>
+        <button class="edit-chip" onclick="editPhoneField(${i})">✏️</button>
       </div>`;
     });
   } else {
@@ -1270,7 +1315,7 @@ function savePhoneField(i) {
     row.innerHTML = `
       <span class="field-label">${typeLabel}</span>
       <span class="field-value" id="field-phone-${i}-display"><a href="tel:${val}">${val}</a></span>
-      <button class="edit-chip" onclick="editPhoneField(${i})">Edit</button>`;
+      <button class="edit-chip" onclick="editPhoneField(${i})">✏️</button>`;
   } else {
     row.innerHTML = `
       <span class="field-label">${typeLabel}</span>
@@ -1331,7 +1376,7 @@ function saveField(key) {
   if (val) {
     input.outerHTML = `<span class="field-value" id="field-${key}-display">${linkFn(val)}</span>`;
     row.querySelector('.save-chip').outerHTML =
-      `<button class="edit-chip" onclick="editField('${key}')">Edit</button>`;
+      `<button class="edit-chip" onclick="editField('${key}')">✏️</button>`;
   } else {
     input.outerHTML = `<input class="field-input" id="field-${key}-input"
       placeholder="${fieldPlaceholders[key] || ''}"
