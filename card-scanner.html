@@ -1,4 +1,4 @@
-<!-- card-scanner v1.23.0 -->
+<!-- card-scanner v1.25.0 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -394,6 +394,20 @@
   </div>
 </div>
 
+<!-- Date confirmation modal -->
+<div class="modal-overlay hidden" id="date-confirm-modal">
+  <div class="modal-sheet">
+    <div class="modal-title">📅 Follow-up date detected</div>
+    <div class="modal-subtitle" id="date-confirm-subtitle">A date was mentioned in your notes</div>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px;text-align:center;">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:4px;">Detected date</div>
+      <div id="date-confirm-display" style="font-size:22px;font-family:'DM Serif Display',serif;color:var(--accent2);"></div>
+    </div>
+    <button class="modal-btn primary" onclick="confirmFollowUpDate()">Use this date</button>
+    <button class="modal-btn cancel" onclick="document.getElementById('date-confirm-modal').classList.add('hidden')">Keep current date</button>
+  </div>
+</div>
+
 <!-- Result card -->
 <div class="result-card" id="result-card">
   <div class="result-header">
@@ -553,6 +567,7 @@ let selectedInvite = new Set(['none']);
 let selectedParaCount = 3;
 let selectedTone = 'professional';
 let emailDraftText = '';
+let pendingFollowUpDate = null;
 
 const preview = document.getElementById('preview');
 const scanBtn = document.getElementById('scan-btn');
@@ -1099,12 +1114,35 @@ async function generateEmailDraft() {
     emailDraftText = data.email || '';
     document.getElementById('email-draft-content').textContent = emailDraftText;
     document.getElementById('email-modal').classList.remove('hidden');
+
+    // If a follow-up date was detected, ask the user to confirm before setting
+    if (data.followUpDate) {
+      pendingFollowUpDate = data.followUpDate;
+      const formatted = new Date(data.followUpDate + 'T12:00:00')
+        .toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+      document.getElementById('date-confirm-display').textContent = formatted;
+      document.getElementById('date-confirm-subtitle').textContent =
+        'We found a date mentioned in your notes. Would you like to use it?';
+      // Show after email modal closes, slight delay feels natural
+      setTimeout(() => {
+        document.getElementById('date-confirm-modal').classList.remove('hidden');
+      }, 400);
+    }
   } catch (err) {
     showToast('Could not generate email: ' + err.message);
   } finally {
     btn.disabled = false;
     btn.innerHTML = 'Generate follow-up email';
   }
+}
+
+function confirmFollowUpDate() {
+  if (pendingFollowUpDate) {
+    document.getElementById('cal-date').value = pendingFollowUpDate;
+    showToast('Follow-up date updated ✓');
+    pendingFollowUpDate = null;
+  }
+  document.getElementById('date-confirm-modal').classList.add('hidden');
 }
 
 function copyEmailDraft() {
@@ -1152,6 +1190,7 @@ function downloadVCard() {
 function reset() {
   selectedFile = null; pendingQRText = null; pendingBase64 = null; pendingMediaType = null;
   emailDraftText = '';
+  pendingFollowUpDate = null;
   selectedParaCount = 3;
   selectedTone = 'professional';
   document.querySelectorAll('[data-para]').forEach(c => {
