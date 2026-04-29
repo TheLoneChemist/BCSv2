@@ -1,0 +1,157 @@
+<!-- maintenance v1.0.0 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Card Scanner">
+<title>Card Scanner — Under Maintenance</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #2D1B4E;
+    --surface:   #38215e;
+    --surface2:  #42286c;
+    --border:    #543580;
+    --border2:   #644592;
+    --accent:    #5A4FCF;
+    --accent2:   #AFA8FF;
+    --muted:     #9FA3B0;
+    --text:      #F1F1F5;
+    --text2:     #9FA3B0;
+    --success:   #7ED7C1;
+    --radius:    16px;
+    --radius-sm: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+    color: var(--text);
+    gap: 1.5rem;
+  }
+
+  /* Grain texture */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 0; opacity: 0.6;
+  }
+  body > * { position: relative; z-index: 1; }
+
+  .icon-wrap {
+    width: 80px; height: 80px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 30px; font-weight: 400;
+    color: var(--text);
+    letter-spacing: -0.3px;
+    text-align: center;
+  }
+
+  .card {
+    width: 100%; max-width: 440px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2rem 1.75rem;
+    display: flex; flex-direction: column;
+    align-items: center; gap: 1rem;
+    text-align: center;
+  }
+
+  .card p {
+    font-size: 15px;
+    color: var(--text2);
+    line-height: 1.65;
+  }
+
+  .card p strong {
+    color: var(--accent2);
+    font-weight: 600;
+  }
+
+  .divider {
+    width: 100%;
+    border: none;
+    border-top: 1px solid var(--border);
+  }
+
+  .status-row {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 14px; color: var(--text2);
+  }
+  .status-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--success);
+    box-shadow: 0 0 6px var(--success);
+    flex-shrink: 0;
+  }
+
+  .disclaimer {
+    width: 100%; max-width: 440px;
+    display: flex; align-items: flex-start; gap: 8px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 11px 13px;
+    font-size: 12px; color: var(--text2); line-height: 1.5;
+  }
+  .disclaimer svg { flex-shrink: 0; margin-top: 1px; opacity: 0.6; }
+  .disclaimer strong { color: var(--accent2); font-weight: 600; }
+</style>
+</head>
+<body>
+
+  <div class="icon-wrap">
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#AFA8FF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="3" width="18" height="18" rx="3"/>
+      <circle cx="8.5" cy="8.5" r="1.5"/>
+      <polyline points="21 15 16 10 5 21"/>
+    </svg>
+  </div>
+
+  <h1>Card Scanner</h1>
+
+  <div class="card">
+    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#AFA8FF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"/>
+      <line x1="12" y1="8" x2="12" y2="12"/>
+      <line x1="12" y1="16" x2="12.01" y2="16"/>
+    </svg>
+
+    <p style="font-size:19px; font-weight:600; color:var(--text);">Under Maintenance</p>
+
+    <p>We're making some improvements and will be back shortly.<br>Thanks for your patience.</p>
+
+    <hr class="divider">
+
+    <div class="status-row">
+      <div class="status-dot"></div>
+      <span>All systems operational — scheduled maintenance only</span>
+    </div>
+  </div>
+
+  <div class="disclaimer">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+    </svg>
+    <span>This app uses AI to read cards and generate emails. Powered by <strong>Claude Haiku 4.5</strong> (Anthropic).</span>
+  </div>
+
+</body>
+</html>
