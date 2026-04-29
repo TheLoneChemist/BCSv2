@@ -1,4 +1,4 @@
-// card-scanner-api v1.1.0
+// card-scanner-api v1.2.0
 import express from 'express';
 import cors from 'cors';
 import Anthropic from '@anthropic-ai/sdk';
@@ -189,6 +189,7 @@ app.post('/generate-email', async (req, res) => {
   const d = contact || {};
   const firstName = (d.name || '').split(' ')[0] || 'there';
   const paraCount = parseInt(paragraphs) || 3;
+  const today = new Date().toISOString().split('T')[0];
 
   const toneMap = {
     professional: 'professional and polished',
@@ -199,12 +200,14 @@ app.post('/generate-email', async (req, res) => {
   const toneDesc = toneMap[tone] || (tone && tone !== 'other' ? tone : 'professional and polished');
 
   try {
-    const msg = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1000,
-      messages: [{
-        role: 'user',
-        content: `Write a follow-up email draft.
+    // Run email generation and date extraction in parallel
+    const [emailMsg, dateMsg] = await Promise.all([
+      client.messages.create({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: `Write a follow-up email draft.
 
 Contact info:
 - Name: ${d.name || 'Unknown'}
@@ -223,11 +226,41 @@ Instructions:
 - Don't use excessive pleasantries or filler
 - Sign off as "Best," then leave a blank line for my name
 - Output ONLY the email body, no subject line, no explanation`
-      }]
-    });
+        }]
+      }),
 
-    const text = msg.content.map(b => b.text || '').join('').trim();
-    res.json({ email: text });
+      client.messages.create({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 100,
+        messages: [{
+          role: 'user',
+          content: `Today is ${today}. Read the following conversation notes and determine if a specific follow-up date or timeframe is mentioned (e.g. "next Tuesday", "in two weeks", "March 15th", "end of month").
+
+If a date or timeframe is found, return ONLY a JSON object with one key: "followUpDate" as an ISO 8601 date string (YYYY-MM-DD), calculated relative to today.
+If no date or timeframe is mentioned, return: {"followUpDate": null}
+
+Reply with raw JSON only. No markdown, no explanation.
+
+Conversation notes:
+${notes}`
+        }]
+      })
+    ]);
+
+    const emailText = emailMsg.content.map(b => b.text || '').join('').trim();
+
+    let followUpDate = null;
+    try {
+      const dateRaw = dateMsg.content.map(b => b.text || '').join('').trim();
+      const s = dateRaw.indexOf('{');
+      const e = dateRaw.lastIndexOf('}');
+      if (s !== -1 && e !== -1) {
+        const parsed = JSON.parse(dateRaw.slice(s, e + 1));
+        followUpDate = parsed.followUpDate || null;
+      }
+    } catch { /* date extraction failed silently — not critical */ }
+
+    res.json({ email: emailText, followUpDate });
   } catch (err) {
     console.error('Error:', err.status, err.message, JSON.stringify(err.error));
     res.status(500).json({ error: err.message });
