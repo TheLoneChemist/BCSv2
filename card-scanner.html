@@ -1,4 +1,4 @@
-<!-- card-scanner v1.30.0 -->
+<!-- card-scanner v1.31.0 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -602,8 +602,10 @@
     </div>
     <div id="contact-chips-wrap" style="display:none; margin-top:8px;">
       <div class="cal-label" style="margin-bottom:6px;">Send via</div>
-      <div class="invite-options">
-        <button class="invite-chip" id="chip-phone" data-invite="phone" onclick="toggleInvite('phone')">Phone</button>
+      <div class="invite-options" id="phone-chip-options">
+        <button class="invite-chip dimmed" id="chip-phone" data-invite="phone-0" onclick="toggleInvite('phone-0')">Phone</button>
+      </div>
+      <div class="invite-options" style="margin-top:6px;">
         <button class="invite-chip" id="chip-email" data-invite="email" onclick="toggleInvite('email')">E-mail</button>
       </div>
     </div>
@@ -828,14 +830,23 @@ function tryDecodeQR(canvas) {
 }
 
 function parseQRText(text) {
-  const result = { name: '', title: '', company: '', email: '', phone: '', website: '' };
+  const result = { name: '', title: '', company: '', email: '', phones: [], website: '' };
   if (text.startsWith('BEGIN:VCARD')) {
     text.split(/\r?\n/).forEach(line => {
       if (line.startsWith('FN:')) result.name = line.slice(3);
       else if (line.startsWith('ORG:')) result.company = line.slice(4);
       else if (line.startsWith('TITLE:')) result.title = line.slice(6);
       else if (line.startsWith('EMAIL')) result.email = line.split(':').slice(1).join(':');
-      else if (line.startsWith('TEL')) result.phone = line.split(':').slice(1).join(':');
+      else if (line.startsWith('TEL')) {
+        const number = line.split(':').slice(1).join(':');
+        const typePart = (line.match(/TYPE=([^:;]+)/i) || [])[1] || '';
+        const tl = typePart.toLowerCase();
+        let type = 'office';
+        if (tl.includes('cell') || tl.includes('mobile')) type = 'cell';
+        else if (tl.includes('fax')) type = 'fax';
+        else if (tl.includes('home')) type = 'home';
+        result.phones.push({ type, number });
+      }
       else if (line.startsWith('URL')) result.website = line.split(':').slice(1).join(':');
     });
     return result;
@@ -903,19 +914,23 @@ function showResult(d) {
   scanBtn.style.display = 'none';
   preview.style.display = 'block';
 
-  // Format phone on arrival
-  if (d.phone) d.phone = formatPhone(d.phone);
+  // Normalize: support legacy single `phone` string or new `phones` array
+  if (!d.phones || !Array.isArray(d.phones)) {
+    d.phones = d.phone ? [{ type: 'office', number: d.phone }] : [];
+    delete d.phone;
+  }
+  // Format each phone number
+  d.phones = d.phones.map(p => ({ ...p, number: formatPhone(p.number) }));
 
   document.getElementById('avatar').textContent = initials(d.name);
   document.getElementById('res-name').textContent = d.name || '—';
   document.getElementById('res-title').textContent = d.title || '';
   document.getElementById('res-company').textContent = d.company || '';
 
-  // Always show name, email, phone — blank input if missing; edit chip if present
+  // Build field rows
   const fieldDefs = [
     { key: 'name',  label: 'Name',  placeholder: 'Enter name…',  linkFn: null },
     { key: 'email', label: 'Email', placeholder: 'Enter email…', linkFn: v => `<a href="mailto:${v}">${v}</a>` },
-    { key: 'phone', label: 'Phone', placeholder: 'Enter phone…', linkFn: v => `<a href="tel:${v}">${v}</a>` },
   ];
   if (d.website) {
     fieldDefs.push({ key: 'website', label: 'Website', placeholder: 'Enter website…',
@@ -923,7 +938,8 @@ function showResult(d) {
     });
   }
 
-  document.getElementById('fields').innerHTML = fieldDefs.map(f => {
+  // Render standard fields
+  let fieldsHTML = fieldDefs.map(f => {
     const val = (d[f.key] || '').trim();
     const id = `field-${f.key}`;
     if (val) {
@@ -943,16 +959,40 @@ function showResult(d) {
     }
   }).join('');
 
-  // Dim contact chips if no value available
-  const phoneChip = document.getElementById('chip-phone');
-  const emailChip = document.getElementById('chip-email');
-  if (phoneChip) phoneChip.classList.toggle('dimmed', !d.phone);
-  if (emailChip) emailChip.classList.toggle('dimmed', !d.email);
+  // Render phone rows — one per entry, plus a blank "add phone" row if none
+  if (d.phones.length > 0) {
+    d.phones.forEach((p, i) => {
+      const typeLabel = p.type.charAt(0).toUpperCase() + p.type.slice(1);
+      fieldsHTML += `<div class="field-row" id="row-phone-${i}">
+        <span class="field-label">${typeLabel}</span>
+        <span class="field-value" id="field-phone-${i}-display">
+          <a href="tel:${p.number}">${p.number}</a>
+        </span>
+        <button class="edit-chip" onclick="editPhoneField(${i})">Edit</button>
+      </div>`;
+    });
+  } else {
+    fieldsHTML += `<div class="field-row" id="row-phone-0">
+      <span class="field-label">Phone</span>
+      <input class="field-input" id="field-phone-0-input" placeholder="Enter phone…"
+        onkeydown="if(event.key==='Enter') savePhoneField(0)">
+      <button class="save-chip" onclick="savePhoneField(0)">Save</button>
+    </div>`;
+  }
+
+  document.getElementById('fields').innerHTML = fieldsHTML;
+
+  // Build phone chip options for invite section
+  updatePhoneChips();
 
   // Set contact name on toggle label
   const firstName = (d.name || '').trim().split(/\s+/)[0];
   const contactLabel = document.getElementById('contact-toggle-label');
   if (contactLabel) contactLabel.textContent = firstName || 'Contact';
+
+  // Dim email chip if no email
+  const emailChip = document.getElementById('chip-email');
+  if (emailChip) emailChip.classList.toggle('dimmed', !d.email);
 
   setDefaultDate();
   resultCard.style.display = 'flex';
@@ -1205,6 +1245,67 @@ const fieldPlaceholders = {
   phone: 'Enter phone…', website: 'Enter website…'
 };
 
+function editPhoneField(i) {
+  const row = document.getElementById(`row-phone-${i}`);
+  const p = currentData.phones[i];
+  const typeLabel = p.type.charAt(0).toUpperCase() + p.type.slice(1);
+  row.innerHTML = `
+    <span class="field-label">${typeLabel}</span>
+    <input class="field-input" id="field-phone-${i}-input" value="${p.number}"
+      placeholder="Enter phone…" onkeydown="if(event.key==='Enter') savePhoneField(${i})">
+    <button class="save-chip" onclick="savePhoneField(${i})">Save</button>`;
+  document.getElementById(`field-phone-${i}-input`).focus();
+}
+
+function savePhoneField(i) {
+  const input = document.getElementById(`field-phone-${i}-input`);
+  if (!input) return;
+  const val = formatPhone(input.value.trim());
+  if (!currentData.phones[i]) currentData.phones[i] = { type: 'office', number: '' };
+  currentData.phones[i].number = val;
+  const p = currentData.phones[i];
+  const typeLabel = p.type.charAt(0).toUpperCase() + p.type.slice(1);
+  const row = document.getElementById(`row-phone-${i}`);
+  if (val) {
+    row.innerHTML = `
+      <span class="field-label">${typeLabel}</span>
+      <span class="field-value" id="field-phone-${i}-display"><a href="tel:${val}">${val}</a></span>
+      <button class="edit-chip" onclick="editPhoneField(${i})">Edit</button>`;
+  } else {
+    row.innerHTML = `
+      <span class="field-label">${typeLabel}</span>
+      <input class="field-input" id="field-phone-${i}-input" placeholder="Enter phone…"
+        onkeydown="if(event.key==='Enter') savePhoneField(${i})">
+      <button class="save-chip" onclick="savePhoneField(${i})">Save</button>`;
+  }
+  updatePhoneChips();
+}
+
+function updatePhoneChips() {
+  const phones = (currentData && currentData.phones) || [];
+  const hasPhone = phones.some(p => p.number);
+  const wrap = document.getElementById('contact-chips-wrap');
+  const phoneChipWrap = document.getElementById('phone-chip-options');
+
+  // Replace the single Phone chip with a dynamic list if multiple numbers
+  if (phoneChipWrap) {
+    if (phones.length <= 1) {
+      const chip = document.getElementById('chip-phone');
+      if (chip) chip.classList.toggle('dimmed', !hasPhone);
+    } else {
+      phoneChipWrap.innerHTML = phones.map((p, i) => {
+        const label = p.type.charAt(0).toUpperCase() + p.type.slice(1);
+        return `<button class="invite-chip${!p.number ? ' dimmed' : ''}" 
+          data-invite="phone-${i}" onclick="toggleInvite('phone-${i}')">
+          ${label}
+        </button>`;
+      }).join('');
+    }
+  }
+  const emailChip = document.getElementById('chip-email');
+  if (emailChip) emailChip.classList.toggle('dimmed', !(currentData && currentData.email));
+}
+
 function editField(key) {
   const row = document.getElementById(`row-${key}`);
   const displayEl = document.getElementById(`field-${key}-display`);
@@ -1279,8 +1380,13 @@ function createCalendarEvent() {
   if (contactOn && selectedInvite.has('email') && currentData.email) {
     attendeeLines.push(`ATTENDEE;RSVP=TRUE:mailto:${currentData.email}`);
   }
-  if (contactOn && selectedInvite.has('phone') && currentData.phone) {
-    description += `\n\nInvite SMS to: ${currentData.phone}`;
+  // Handle phone-N invite selections
+  if (contactOn && currentData.phones) {
+    currentData.phones.forEach((p, i) => {
+      if (selectedInvite.has(`phone-${i}`) && p.number) {
+        description += `\n\nInvite SMS to (${p.type}): ${p.number}`;
+      }
+    });
   }
   if (selectedInvite.has('other') || document.getElementById('team-toggle').checked) {
     const otherVal = document.getElementById('invite-other-input').value.trim();
@@ -1464,13 +1570,19 @@ function downloadVCard() {
   if (!currentData) return;
   const d = currentData;
   const notes = document.getElementById('notes-field').value.trim();
+
+  const typeMap = { office: 'WORK,VOICE', cell: 'CELL', fax: 'FAX', 'toll-free': 'WORK,VOICE', home: 'HOME,VOICE', other: 'VOICE' };
+  const phoneLines = (d.phones || [])
+    .filter(p => p.number)
+    .map(p => `TEL;TYPE=${typeMap[p.type] || 'VOICE'}:${p.number}`);
+
   const lines = [
     'BEGIN:VCARD', 'VERSION:3.0',
     `FN:${d.name || ''}`,
     d.title ? `TITLE:${d.title}` : '',
     d.company ? `ORG:${d.company}` : '',
     d.email ? `EMAIL:${d.email}` : '',
-    d.phone ? `TEL:${d.phone}` : '',
+    ...phoneLines,
     d.website ? `URL:${d.website.startsWith('http') ? d.website : 'https://' + d.website}` : '',
     notes ? `NOTE:${notes.replace(/\n/g, '\\n')}` : '',
     'END:VCARD'
