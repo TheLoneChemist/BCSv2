@@ -1,4 +1,19 @@
-// card-scanner-api v1.10.0
+// card-scanner-api v1.12.0
+//
+// CHANGELOG
+// v1.1.0  - Added /generate-email endpoint
+// v1.2.0  - /generate-email now accepts tone parameter; date/time extraction runs in parallel
+// v1.3.0  - Date extractor also infers follow-up time from context clues (coffee, dinner, etc.)
+// v1.4.0  - /generate-email accepts followUpDate and followUpTime; includes them in email prompt
+// v1.5.0  - /read-card and /read-card-qr now return phones[] array instead of single phone string
+// v1.6.0  - Added /generate-text endpoint for SMS suggestion
+// v1.7.0  - /generate-text hidden date/time row unless follow-up detected; no emojis in SMS
+// v1.8.0  - Added /polish-notes endpoint
+// v1.9.0  - /generate-text accepts fallbackDate from reminder section when notes have no date
+// v1.10.0 - Em dashes banned from all generated text (email, SMS, polish)
+// v1.11.0 - /generate-text always produces a message even with vague notes; never asks for clarification
+// v1.12.0 - SMS always includes the reminder date as a concrete proposed follow-up; framed as a question
+//
 import express from 'express';
 import cors from 'cors';
 import Anthropic from '@anthropic-ai/sdk';
@@ -350,9 +365,6 @@ app.post('/generate-text', async (req, res) => {
 
   const d = contact || {};
   const firstName = (d.name || '').split(' ')[0] || 'there';
-  const dateHint = fallbackDate
-    ? `\n- If the notes don't mention a specific follow-up date, naturally reference ${fallbackDate} as the follow-up`
-    : '';
 
   try {
     const msg = await client.messages.create({
@@ -368,8 +380,10 @@ Notes: ${notes}
 Rules:
 - 1 sentence if possible, 2 sentences maximum
 - Casual, warm, natural — like a real text message
-- Reference the conversation briefly
-- If a specific follow-up date, time, or meeting is mentioned in the notes, include it naturally in the message${dateHint}
+- Reference the conversation as specifically as you can, but if notes are vague, write a warm generic follow-up
+- Always produce a message no matter how little detail is in the notes — never ask for clarification or refuse
+- Always include the specific follow-up date (${fallbackDate || 'soon'}) in the message — propose it as a concrete time to connect, call, or meet
+- Frame the date as a question or suggestion (e.g. "Would Thursday work?", "Are you free Friday?") to keep it conversational
 - No sign-off or name needed
 - NO emojis — none at all
 - No exclamation marks unless absolutely natural
