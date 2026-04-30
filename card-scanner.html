@@ -1,6 +1,7 @@
-<!-- card-scanner v1.60.0 -->
+<!-- card-scanner v1.61.0 -->
 <!--
 CHANGELOG
+v1.61.0 - Calendar and SMS dates update dynamically as notes are typed; em dash removed from subject line; Regenerate button made compact
 v1.60.0 - Meeting date selector added above Scan card button (Yesterday / Today / Other)
 v1.59.0 - Removed date and time chips from follow-up text message section
 v1.58.0 - Email modal: Open in mail app and Copy draft condensed to one compact row
@@ -510,7 +511,12 @@ v1.1.0  - Version tracking and AI disclaimer added
       " placeholder='e.g. "We were at a conference about pens, not a pen shop"'
         onfocus="this.style.borderColor='var(--accent2)'"
         onblur="this.style.borderColor='var(--border)'"></textarea>
-      <button class="modal-btn secondary" id="regenerate-btn" onclick="regenerateEmailDraft()" style="margin-top:8px;">Regenerate</button>
+      <button id="regenerate-btn" onclick="regenerateEmailDraft()" style="
+        margin-top:8px; padding:7px 16px; border-radius:var(--radius-sm);
+        border:1px solid var(--border); background:var(--surface2);
+        color:var(--text); font-family:'DM Sans',sans-serif;
+        font-size:13px; font-weight:600; cursor:pointer; transition:background 0.15s;
+      ">Regenerate</button>
     </div>
     <div style="display:flex;gap:8px;margin-top:4px;">
       <button onclick="openInMailApp()" style="
@@ -1711,7 +1717,45 @@ function scheduleTextSuggestion() {
   clearTimeout(textSuggestionTimer);
   const notes = document.getElementById('notes-field').value.trim();
   if (!notes || notes.length < 10) return;
-  textSuggestionTimer = setTimeout(() => generateTextSuggestion(notes), 1500);
+  textSuggestionTimer = setTimeout(() => {
+    generateTextSuggestion(notes);
+    extractDateFromNotes(notes);
+  }, 1500);
+}
+
+async function extractDateFromNotes(notes) {
+  try {
+    const res = await fetch(`${API}/extract-date`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ notes, meetingDate })
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.followUpDate) {
+      pendingFollowUpDate = data.followUpDate;
+      pendingFollowUpTime = data.followUpTime || null;
+
+      // Silently update the calendar date/time
+      document.getElementById('cal-date').value = data.followUpDate;
+      if (data.followUpTime) {
+        document.getElementById('cal-time').value = data.followUpTime;
+        const [h24, m] = data.followUpTime.split(':').map(Number);
+        const { h, ap } = from24(h24);
+        const btn = document.getElementById('cal-time-btn');
+        if (btn) btn.textContent = fmt12(h, m, ap);
+      }
+      // Update SMS fallback date
+      const d = new Date(data.followUpDate + 'T12:00:00');
+      const fallbackDate = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+      // Refresh SMS suggestion with new date context if body is still auto-generated
+      const smsBody = document.getElementById('sms-body');
+      if (smsBody && smsBody.value) {
+        // Only regenerate if it looks like the previous auto-suggestion (not user-edited)
+        generateTextSuggestion(notes);
+      }
+    }
+  } catch { /* silent */ }
 }
 
 async function generateTextSuggestion(notes) {
@@ -2014,14 +2058,14 @@ function openInMailApp() {
   if (!emailDraftText) return;
   const to = (currentData && currentData.email) ? encodeURIComponent(currentData.email) : '';
   const name = (currentData && currentData.name) ? currentData.name : '';
-  const subject = encodeURIComponent(`Following up${name ? ' — ' + name : ''}`);
+  const subject = encodeURIComponent(`Following up${name ? ', ' + name : ''}`);
 
   // mailto body is limited to ~1900 chars to stay safe across OS/browsers
   const LIMIT = 1900;
   let body = emailDraftText;
   let truncated = false;
   if (body.length > LIMIT) {
-    body = body.slice(0, LIMIT) + '\n\n[— continued —]';
+    body = body.slice(0, LIMIT) + '\n\n[continued...]';
     truncated = true;
   }
 
