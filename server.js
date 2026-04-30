@@ -1,4 +1,4 @@
-// card-scanner-api v1.7.0
+// card-scanner-api v1.8.0
 import express from 'express';
 import cors from 'cors';
 import Anthropic from '@anthropic-ai/sdk';
@@ -297,6 +297,44 @@ ${notes}`
     } catch { /* date extraction failed silently — not critical */ }
 
     res.json({ email: emailText, followUpDate, followUpTime });
+  } catch (err) {
+    console.error('Error:', err.status, err.message, JSON.stringify(err.error));
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Polish raw conversation notes into a concise summary
+app.post('/polish-notes', async (req, res) => {
+  const { notes, contact } = req.body;
+  if (!notes) return res.status(400).json({ error: 'Missing notes' });
+
+  const d = contact || {};
+
+  try {
+    const msg = await client.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 400,
+      messages: [{
+        role: 'user',
+        content: `Polish the following raw conversation notes into a concise, professional summary.
+
+Contact: ${d.name || 'Unknown'}${d.company ? ` at ${d.company}` : ''}
+
+Raw notes:
+${notes}
+
+Instructions:
+- Keep all key facts, commitments, dates, and action items — do not lose any information
+- Write in first person ("We discussed…", "They mentioned…", "I agreed to…")
+- Fix grammar and spelling
+- Remove filler words and redundancy
+- Keep it concise but complete — 2 to 4 sentences is ideal
+- Preserve any specific dates, names, or numbers exactly as given
+- Output ONLY the polished notes, no preamble or explanation`
+      }]
+    });
+    const polished = msg.content.map(b => b.text || '').join('').trim();
+    res.json({ polished });
   } catch (err) {
     console.error('Error:', err.status, err.message, JSON.stringify(err.error));
     res.status(500).json({ error: err.message });
