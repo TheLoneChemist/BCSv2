@@ -1,6 +1,7 @@
-// card-scanner-api v1.21.0
+// card-scanner-api v1.22.0
 //
 // CHANGELOG
+// v1.22.0 - Email draft now starts with "Hello [Name]," greeting (or "Hi" for casual tone)
 // v1.21.0 - SMS framing restored to question format while keeping date and meeting type exact
 // v1.20.0 - /generate-text uses exact meeting type from notes; date treated as immutable; framed as confirmation not question
 // v1.19.0 - Added /extract-date endpoint for live calendar updates as user types notes
@@ -312,6 +313,7 @@ ${notes}
 
 Instructions:
 - Tone: ${toneDesc}
+- Start with a greeting on its own line: "Hello ${firstName}," (or "Hi ${firstName}," for casual tone)
 - Address them by first name (${firstName})
 - Reference the conversation naturally
 - Write EXACTLY ${paraCount} paragraph${paraCount > 1 ? 's' : ''} — no more, no fewer
