@@ -1,22 +1,24 @@
-// card-scanner-api v1.16.0
+// card-scanner-api v1.18.0
 //
 // CHANGELOG
-// v1.1.0  - Added /generate-email endpoint
-// v1.2.0  - /generate-email now accepts tone parameter; date/time extraction runs in parallel
-// v1.3.0  - Date extractor also infers follow-up time from context clues (coffee, dinner, etc.)
-// v1.4.0  - /generate-email accepts followUpDate and followUpTime; includes them in email prompt
-// v1.5.0  - /read-card and /read-card-qr now return phones[] array instead of single phone string
-// v1.6.0  - Added /generate-text endpoint for SMS suggestion
-// v1.7.0  - /generate-text hidden date/time row unless follow-up detected; no emojis in SMS
-// v1.8.0  - Added /polish-notes endpoint
-// v1.9.0  - /generate-text accepts fallbackDate from reminder section when notes have no date
-// v1.10.0 - Em dashes banned from all generated text (email, SMS, polish)
-// v1.11.0 - /generate-text always produces a message even with vague notes; never asks for clarification
-// v1.12.0 - SMS always includes the reminder date as a concrete proposed follow-up; framed as a question
-// v1.13.0 - /generate-email accepts optional correction field; injected into prompt for regeneration
-// v1.14.0 - /generate-email runs hallucination check after draft; returns flags[] of suspect claims
-// v1.15.0 - Hallucination check returns exact verbatim phrases for inline highlighting
+// v1.18.0 - /generate-email accepts meetingDate; date extractor resolves relative dates from meeting date, not today
+// v1.17.0 - Date extractor now always resolves named weekdays to next upcoming occurrence, never past
 // v1.16.0 - Hallucination check returns both descriptions and phrases; both shown in modal
+// v1.15.0 - Hallucination check returns exact verbatim phrases for inline highlighting
+// v1.14.0 - /generate-email runs hallucination check after draft; returns flags[] of suspect claims
+// v1.13.0 - /generate-email accepts optional correction field; injected into prompt for regeneration
+// v1.12.0 - SMS always includes the reminder date as a concrete proposed follow-up; framed as a question
+// v1.11.0 - /generate-text always produces a message even with vague notes; never asks for clarification
+// v1.10.0 - Em dashes banned from all generated text (email, SMS, polish)
+// v1.9.0  - /generate-text accepts fallbackDate from reminder section when notes have no date
+// v1.8.0  - Added /polish-notes endpoint
+// v1.7.0  - /generate-text hidden date/time row unless follow-up detected; no emojis in SMS
+// v1.6.0  - Added /generate-text endpoint for SMS suggestion
+// v1.5.0  - /read-card and /read-card-qr now return phones[] array instead of single phone string
+// v1.4.0  - /generate-email accepts followUpDate and followUpTime; includes them in email prompt
+// v1.3.0  - Date extractor also infers follow-up time from context clues (coffee, dinner, etc.)
+// v1.2.0  - /generate-email now accepts tone parameter; date/time extraction runs in parallel
+// v1.1.0  - Added /generate-email endpoint
 //
 import express from 'express';
 import cors from 'cors';
@@ -207,7 +209,7 @@ Rules:
 
 // Generate follow-up email draft from conversation notes
 app.post('/generate-email', async (req, res) => {
-  const { contact, notes, paragraphs, tone, followUpDate, followUpTime, correction } = req.body;
+  const { contact, notes, paragraphs, tone, followUpDate, followUpTime, correction, meetingDate } = req.body;
 
   if (!notes) {
     return res.status(400).json({ error: 'Missing notes' });
@@ -217,6 +219,12 @@ app.post('/generate-email', async (req, res) => {
   const firstName = (d.name || '').split(' ')[0] || 'there';
   const paraCount = parseInt(paragraphs) || 3;
   const today = new Date().toISOString().split('T')[0];
+  const refDate = meetingDate || today; // use meeting date for relative date resolution
+  const refDateLabel = new Date(refDate + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+  const metRecently = meetingDate && meetingDate !== today;
+  const metLabel = metRecently
+    ? `\n- They met on ${refDateLabel}, so phrases like "great meeting you" should reference that, not today`
+    : '';
 
   const toneMap = {
     professional: 'professional and polished',
@@ -271,7 +279,7 @@ Instructions:
 - Write EXACTLY ${paraCount} paragraph${paraCount > 1 ? 's' : ''} — no more, no fewer
 - End with a clear next step${paraCount === 1 ? ' (work it into the single paragraph)' : ''}${dateTimeHint}${correctionHint}
 - Don't use excessive pleasantries or filler
-- Never use em dashes (—) — use commas, periods, or reword instead
+- Never use em dashes (—) — use commas, periods, or reword instead${metLabel}
 - Sign off as "Best," then leave a blank line for my name
 - Output ONLY the email body, no subject line, no explanation`
         }]
@@ -282,9 +290,13 @@ Instructions:
         max_tokens: 100,
         messages: [{
           role: 'user',
-          content: `Today is ${today}. Read the following conversation notes and extract two things:
+          content: `Today is ${today} (${new Date(today).toLocaleDateString('en-US', {weekday:'long'})}). The meeting with this contact took place on ${refDateLabel}. Read the following conversation notes and extract two things:
 
-1. Follow-up DATE: If a specific date or timeframe is mentioned (e.g. "next Tuesday", "in two weeks", "March 15th"), resolve it to a YYYY-MM-DD date relative to today. Otherwise null.
+1. Follow-up DATE: If a specific date or timeframe is mentioned, resolve it relative to the meeting date (${refDateLabel}), not today.
+   - Named weekdays (e.g. "Wednesday", "next Tuesday") MUST resolve to the NEXT UPCOMING occurrence after the meeting date — never a past date
+   - "Next [weekday]" always means the following week's occurrence from the meeting date
+   - Relative terms like "in two weeks", "end of month", "March 15th" resolve from the meeting date
+   - If no date is mentioned, return null
 
 2. Follow-up TIME: Infer a sensible time based on context clues:
    - "coffee" or "breakfast" → "10:00"
