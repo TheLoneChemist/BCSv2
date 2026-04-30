@@ -1,4 +1,61 @@
-<!-- card-scanner v1.51.0 -->
+<!-- card-scanner v1.54.0 -->
+<!--
+CHANGELOG
+v1.1.0  - Version tracking and AI disclaimer added
+v1.2.0  - Dark coffee color scheme
+v1.3.0  - Background changed to Purple Reign #321A55
+v1.4.0  - Background changed to Twilight Grape #2D1B4E
+v1.5.0  - Conversation notes split into own section; follow-up email gets separate header
+v1.6.0  - LinkedIn button styled with official logo and teal gradient
+v1.7.0  - Notes moved above action buttons; Copy JSON removed
+v1.8.0  - Notes textarea taller; Save & connect header added
+v1.9.0  - Calendar invite label dynamic with contact name; No invite default
+v1.10.0 - Invite chips reordered; cal button text updates based on invite selection
+v1.11.0 - Generate email button matches primary button style
+v1.12.0 - Team member chip added to invite; Other input field
+v1.13.0 - Replaced Other chip with Team member; multi-select invite chips
+v1.14.0 - Vertical separators between invite chip groups
+v1.15.0 - Invite UI rebuilt: No invite button, labeled contact chips, team member toggle
+v1.16.0 - Invite redesigned: two toggle rows (contact + other) with independent chip/input
+v1.17.0 - Card image stays visible after QR scan result
+v1.18.0 - QR modal overlay opacity reduced so card shows through
+v1.19.0 - Retake photo / Browse buttons added after image selection
+v1.20.0 - Card thumbnail embedded in QR modal instead of showing through overlay
+v1.21.0 - Browse button uses folder SVG icon instead of emoji
+v1.22.0 - Editable fields with Edit chips; blank inputs for missing name/email/phone
+v1.23.0 - Phone number auto-formats on save and on initial render (US + international)
+v1.24.0 - Follow-up date/time passed to email prompt; included naturally in generated email
+v1.25.0 - Date confirmation modal before applying AI-detected follow-up date
+v1.26.0 - Use a different date chip added; No thank you replaces Keep current date
+v1.27.0 - Time inference from context (coffee, dinner, etc.); time shown in confirm modal
+v1.28.0 - Use a different date opens a date/time picker modal instead of scrolling
+v1.29.0 - Native time input replaced with custom clock UI (canvas-based)
+v1.30.0 - Follow-up date and time included in generated email body
+v1.31.0 - phones[] array replaces single phone field; typed TEL lines in vCard
+v1.32.0 - QR content preview badge in modal; Edit chips use pen emoji
+v1.33.0 - vCard and Wi-Fi QR types use no emoji; phone uses 📱
+v1.34.0 - Edit chips reverted to text "Edit" (cleaner/more professional)
+v1.35.0 - Invite chips: all on one row; only populated phone types shown
+v1.36.0 - Card alignment overlay added (Option D: rect + crosshair) then removed
+v1.37.0 - Conversation notes placeholder updated with date/calendar hint
+v1.38.0 - Open in mail app button added to email modal using mailto: URI
+v1.39.0 - Back button on result card to re-open QR modal if wrong option chosen
+v1.40.0 - Conversation notes placeholder finalized
+v1.41.0 - Disclaimer updated to warn against uploading sensitive data
+v1.42.0 - Card alignment overlay fully removed
+v1.43.0 - Right-side-up reminder added below subtitle
+v1.44.0 - Back button text simplified to arrow + Back
+v1.45.0 - Contact toggle defaults to email (or first phone) when switched on
+v1.46.0 - Include notes in reminder toggle added (default: on)
+v1.47.0 - Section order restructured: reminder → text message → email; SMS section added
+v1.48.0 - Conversation notes placeholder simplified
+v1.49.0 - Include notes in reminder label gets question mark
+v1.50.0 - SMS: no emojis, up to 2 sentences, follow-up date included; date/time row hidden unless date detected
+v1.51.0 - Polish notes chip and modal added with editable preview before committing
+v1.52.0 - SMS suggestion uses reminder date as fallback when notes have no date
+v1.53.0 - Email modal: correction field + Regenerate button so user can fix AI assumptions
+v1.54.0 - Fixed syntax error: copyEmailDraft function declaration was accidentally removed
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -406,9 +463,21 @@
     <div class="modal-subtitle">Generated from your conversation notes</div>
     <div class="email-draft" id="email-draft-content"></div>
     <div id="mailto-truncate-notice" style="display:none;font-size:12px;color:var(--muted);text-align:center;padding:2px 0;">Draft is long — your mail app may truncate it. Use "Copy" to paste the full text.</div>
+    <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:2px;">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">Something off? Add a correction and regenerate.</div>
+      <textarea id="email-correction-input" rows="2" style="
+        width:100%;background:var(--surface2);border:1px solid var(--border);
+        border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;
+        font-size:14px;padding:10px 12px;resize:none;outline:none;
+        transition:border-color 0.15s;line-height:1.5;
+      " placeholder='e.g. "We were at a conference about pens, not a pen shop"'
+        onfocus="this.style.borderColor='var(--accent2)'"
+        onblur="this.style.borderColor='var(--border)'"></textarea>
+      <button class="modal-btn secondary" id="regenerate-btn" onclick="regenerateEmailDraft()" style="margin-top:8px;">Regenerate</button>
+    </div>
     <button class="modal-btn primary" onclick="openInMailApp()">Open in mail app</button>
     <button class="modal-btn secondary" onclick="copyEmailDraft()">Copy draft</button>
-    <button class="modal-btn cancel" onclick="document.getElementById('email-modal').classList.add('hidden')">Close</button>
+    <button class="modal-btn cancel" onclick="closeEmailModal()">Close</button>
   </div>
 </div>
 
@@ -1599,11 +1668,20 @@ async function generateTextSuggestion(notes) {
   const body = document.getElementById('sms-body');
   if (!body) return;
   body.placeholder = 'Generating suggestion…';
+
+  // Pass the reminder date as a fallback if notes don't mention one
+  const calDate = document.getElementById('cal-date').value || null;
+  let fallbackDate = null;
+  if (calDate) {
+    const d = new Date(calDate + 'T12:00:00');
+    fallbackDate = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  }
+
   try {
     const res = await fetch(`${API}/generate-text`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contact: currentData, notes })
+      body: JSON.stringify({ contact: currentData, notes, fallbackDate })
     });
     if (!res.ok) throw new Error(`Server error ${res.status}`);
     const data = await res.json();
@@ -1883,6 +1961,53 @@ function openInMailApp() {
   window.location.href = mailto;
 }
 
+async function regenerateEmailDraft() {
+  const correction = document.getElementById('email-correction-input').value.trim();
+  if (!correction) { showToast('Add a correction first'); return; }
+
+  const btn = document.getElementById('regenerate-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="dot-spin"></span> Regenerating…';
+
+  const draftEl = document.getElementById('email-draft-content');
+  const previousDraft = emailDraftText;
+  draftEl.style.opacity = '0.4';
+
+  try {
+    const res = await fetch(`${API}/generate-email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contact: currentData,
+        notes: document.getElementById('notes-field').value.trim(),
+        paragraphs: selectedParaCount,
+        tone: selectedTone,
+        followUpDate: document.getElementById('cal-date').value || null,
+        followUpTime: document.getElementById('cal-time').value || null,
+        correction
+      })
+    });
+    if (!res.ok) throw new Error(`Server error ${res.status}`);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    emailDraftText = data.email || '';
+    draftEl.textContent = emailDraftText;
+    document.getElementById('email-correction-input').value = '';
+  } catch (err) {
+    emailDraftText = previousDraft;
+    showToast('Could not regenerate: ' + err.message);
+  } finally {
+    draftEl.style.opacity = '1';
+    btn.disabled = false;
+    btn.innerHTML = 'Regenerate';
+  }
+}
+
+function closeEmailModal() {
+  document.getElementById('email-modal').classList.add('hidden');
+  document.getElementById('email-correction-input').value = '';
+}
+
 function copyEmailDraft() {
   if (!emailDraftText) return;
   navigator.clipboard.writeText(emailDraftText);
@@ -1982,6 +2107,8 @@ function reset() {
   selectedSmsPhoneIdx = 0;
   document.getElementById('gen-email-btn').innerHTML = 'Generate follow-up email';
   document.getElementById('gen-email-btn').disabled = false;
+  const correctionInput = document.getElementById('email-correction-input');
+  if (correctionInput) correctionInput.value = '';
   const calBtn = document.getElementById('cal-btn');
   calBtn.textContent = '📅 Add to calendar';
   calBtn.classList.add('primary'); calBtn.classList.remove('cal-created');
