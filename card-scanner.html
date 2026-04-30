@@ -1,6 +1,7 @@
-<!-- card-scanner v1.64.0 -->
+<!-- card-scanner v1.65.0 -->
 <!--
 CHANGELOG
+v1.65.0 - SMS uses exact meeting type from notes (lunch vs coffee); date passed as full weekday string to prevent substitution
 v1.64.0 - Subject line changed to "Name follow-up" format; SMS now waits for date extraction before generating so it uses the correct date
 v1.63.0 - Hallucination highlights preserved after regeneration; shared renderEmailDraft function
 v1.62.0 - Regenerate button moved to right of correction textarea; replaced with spinning arrow icon
@@ -1776,7 +1777,7 @@ async function generateTextSuggestion(notes) {
   if (!body) return;
   body.placeholder = 'Generating suggestion…';
 
-  // Pass the reminder date as a fallback if notes don't mention one
+  // Pass the reminder date as fallback — include full weekday + date for specificity
   const calDate = document.getElementById('cal-date').value || null;
   let fallbackDate = null;
   if (calDate) {
