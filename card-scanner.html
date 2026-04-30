@@ -1,4 +1,4 @@
-<!-- card-scanner v1.55.0 -->
+<!-- card-scanner v1.59.0 -->
 <!--
 CHANGELOG
 v1.1.0  - Version tracking and AI disclaimer added
@@ -56,6 +56,10 @@ v1.52.0 - SMS suggestion uses reminder date as fallback when notes have no date
 v1.53.0 - Email modal: correction field + Regenerate button so user can fix AI assumptions
 v1.54.0 - Fixed syntax error: copyEmailDraft function declaration was accidentally removed
 v1.55.0 - Email modal shows hallucination flags: items in the draft not found in the notes
+v1.56.0 - Flagged phrases highlighted in soft amber directly in the email draft
+v1.57.0 - Both description list and inline phrase highlights shown together
+v1.58.0 - Email modal: Open in mail app and Copy draft condensed to one compact row
+v1.59.0 - Removed date and time chips from follow-up text message section
 -->
 <!DOCTYPE html>
 <html lang="en">
@@ -348,6 +352,13 @@ v1.55.0 - Email modal shows hallucination flags: items in the draft not found in
     white-space: pre-wrap; max-height: 280px; overflow-y: auto;
     margin-top: 6px;
   }
+  .email-flag-highlight {
+    background: rgba(210, 140, 40, 0.22);
+    border-bottom: 1.5px solid rgba(210, 140, 40, 0.6);
+    border-radius: 2px;
+    color: var(--text);
+    cursor: help;
+  }
   .generating-badge {
     display: inline-flex; align-items: center; gap: 6px;
     font-size: 13px; color: var(--accent2); padding: 4px 0;
@@ -480,9 +491,26 @@ v1.55.0 - Email modal shows hallucination flags: items in the draft not found in
         onblur="this.style.borderColor='var(--border)'"></textarea>
       <button class="modal-btn secondary" id="regenerate-btn" onclick="regenerateEmailDraft()" style="margin-top:8px;">Regenerate</button>
     </div>
-    <button class="modal-btn primary" onclick="openInMailApp()">Open in mail app</button>
-    <button class="modal-btn secondary" onclick="copyEmailDraft()">Copy draft</button>
-    <button class="modal-btn cancel" onclick="closeEmailModal()">Close</button>
+    <div style="display:flex;gap:8px;margin-top:4px;">
+      <button onclick="openInMailApp()" style="
+        flex:1;padding:10px 8px;border-radius:var(--radius-sm);border:none;
+        background:var(--accent);color:#F1F1F5;font-family:'DM Sans',sans-serif;
+        font-size:13px;font-weight:600;cursor:pointer;transition:background 0.15s;
+      " onmouseover="this.style.background='var(--accent2)';this.style.color='#0C0C12'"
+         onmouseout="this.style.background='var(--accent)';this.style.color='#F1F1F5'">Open in mail app</button>
+      <button onclick="copyEmailDraft()" style="
+        flex:1;padding:10px 8px;border-radius:var(--radius-sm);
+        border:1px solid var(--border);background:var(--surface2);
+        color:var(--text);font-family:'DM Sans',sans-serif;
+        font-size:13px;font-weight:600;cursor:pointer;transition:background 0.15s;
+      " onmouseover="this.style.background='var(--border)'"
+         onmouseout="this.style.background='var(--surface2)'">Copy draft</button>
+    </div>
+    <button onclick="closeEmailModal()" style="
+      width:100%;padding:9px;border-radius:var(--radius-sm);border:none;
+      background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;
+      font-size:13px;cursor:pointer;margin-top:2px;
+    ">Close</button>
   </div>
 </div>
 
@@ -735,26 +763,6 @@ v1.55.0 - Email modal shows hallucination flags: items in the draft not found in
   <div class="section-title">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
     Follow-up text message
-  </div>
-  <div id="sms-datetime-row" style="display:none; margin-bottom:10px;">
-    <div class="cal-row">
-      <div class="cal-field">
-        <div class="cal-label">Date</div>
-        <input type="date" id="sms-date">
-      </div>
-      <div class="cal-field">
-        <div class="cal-label">Time</div>
-        <button id="sms-time-btn" onclick="openClock('sms')" style="
-          width:100%;background:var(--surface2);border:1px solid var(--border);
-          border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;
-          font-size:14px;padding:10px 12px;text-align:left;cursor:pointer;
-          transition:border-color 0.15s;
-        " onmouseover="this.style.borderColor='var(--accent2)'" onmouseout="this.style.borderColor='var(--border)'">
-          1:00 PM
-        </button>
-        <input type="hidden" id="sms-time" value="13:00">
-      </div>
-    </div>
   </div>
   <div id="sms-phone-row" style="display:none; margin-bottom:10px;">
     <div class="cal-label" style="margin-bottom:6px;">Send to</div>
@@ -1237,13 +1245,6 @@ function showResult(d) {
   if (emailChip) emailChip.classList.toggle('dimmed', !d.email);
 
   setDefaultDate();
-  // Initialize SMS date to same default as calendar
-  const smsDate = document.getElementById('sms-date');
-  if (smsDate && !smsDate.value) {
-    const d2 = new Date();
-    d2.setDate(d2.getDate() + 1);
-    smsDate.value = d2.toISOString().split('T')[0];
-  }
   initSmsPhoneChips();
   // Show back-to-QR button only when user arrived via QR choice
   const rescanRow = document.getElementById('rescan-qr-row');
@@ -1352,7 +1353,7 @@ function from24(h24) {
 
 function openClock(target) {
   clockTargetId = target;
-  const hiddenId = target === 'cal' ? 'cal-time' : target === 'sms' ? 'sms-time' : 'modal-cal-time';
+  const hiddenId = target === 'cal' ? 'cal-time' : 'modal-cal-time';
   const val = document.getElementById(hiddenId).value || '13:00';
   const [h24str, mstr] = val.split(':');
   const { h, ap } = from24(parseInt(h24str));
@@ -1479,8 +1480,8 @@ function applyClockTime() {
   const h24 = to24(clockHour, clockAmPm);
   const val24 = `${String(h24).padStart(2,'0')}:${String(clockMinute).padStart(2,'0')}`;
   const display = fmt12(clockHour, clockMinute, clockAmPm);
-  const hiddenId = clockTargetId === 'cal' ? 'cal-time' : clockTargetId === 'sms' ? 'sms-time' : 'modal-cal-time';
-  const btnId    = clockTargetId === 'cal' ? 'cal-time-btn' : clockTargetId === 'sms' ? 'sms-time-btn' : 'modal-cal-time-btn';
+  const hiddenId = clockTargetId === 'cal' ? 'cal-time' : 'modal-cal-time';
+  const btnId    = clockTargetId === 'cal' ? 'cal-time-btn' : 'modal-cal-time-btn';
   document.getElementById(hiddenId).value = val24;
   const btn = document.getElementById(btnId);
   if (btn) btn.textContent = display;
@@ -1853,17 +1854,31 @@ async function generateEmailDraft() {
     const data = await res.json();
     if (data.error) throw new Error(data.error);
     emailDraftText = data.email || '';
-    document.getElementById('email-draft-content').textContent = emailDraftText;
 
-    // Show hallucination flags if any
+    const flags = data.flags || [];
+    const phrases = data.phrases || [];
+    const draftEl = document.getElementById('email-draft-content');
     const flagsEl = document.getElementById('email-flags');
     const flagsList = document.getElementById('email-flags-list');
-    const flags = data.flags || [];
-    if (flags.length > 0 && flagsEl && flagsList) {
-      flagsList.innerHTML = flags.map(f => `<li>${f}</li>`).join('');
-      flagsEl.style.display = 'block';
-    } else if (flagsEl) {
-      flagsEl.style.display = 'none';
+
+    if (flags.length > 0) {
+      // Populate description list
+      if (flagsList) flagsList.innerHTML = flags.map(f => `<li>${f}</li>`).join('');
+      if (flagsEl) flagsEl.style.display = 'block';
+
+      // Highlight matching phrases inline in the draft
+      let html = emailDraftText
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      phrases.forEach(phrase => {
+        if (!phrase) return;
+        const escaped = phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const re = new RegExp(`(${escaped})`, 'gi');
+        html = html.replace(re, '<mark class="email-flag-highlight" title="May not match your notes">$1</mark>');
+      });
+      draftEl.innerHTML = html.replace(/\n/g, '<br>');
+    } else {
+      draftEl.textContent = emailDraftText;
+      if (flagsEl) flagsEl.style.display = 'none';
     }
 
     document.getElementById('email-modal').classList.remove('hidden');
@@ -1906,19 +1921,13 @@ async function generateEmailDraft() {
 function confirmFollowUpDate() {
   if (pendingFollowUpDate) {
     document.getElementById('cal-date').value = pendingFollowUpDate;
-    // Also set SMS date/time and show the row
-    document.getElementById('sms-date').value = pendingFollowUpDate;
-    document.getElementById('sms-datetime-row').style.display = 'block';
     if (pendingFollowUpTime) {
       document.getElementById('cal-time').value = pendingFollowUpTime;
-      document.getElementById('sms-time').value = pendingFollowUpTime;
       const [h24, m] = pendingFollowUpTime.split(':').map(Number);
       const { h, ap } = from24(h24);
       const display = fmt12(h, m, ap);
       const calBtn = document.getElementById('cal-time-btn');
       if (calBtn) calBtn.textContent = display;
-      const smsBtn = document.getElementById('sms-time-btn');
-      if (smsBtn) smsBtn.textContent = display;
     }
     showToast('Follow-up date & time updated ✓');
     pendingFollowUpDate = null;
@@ -2010,9 +2019,10 @@ async function regenerateEmailDraft() {
     emailDraftText = data.email || '';
     draftEl.textContent = emailDraftText;
     document.getElementById('email-correction-input').value = '';
-    // Clear flags after regeneration
-    const flagsEl = document.getElementById('email-flags');
-    if (flagsEl) flagsEl.style.display = 'none';
+    const flagsEl2 = document.getElementById('email-flags');
+    const flagsList2 = document.getElementById('email-flags-list');
+    if (flagsEl2) flagsEl2.style.display = 'none';
+    if (flagsList2) flagsList2.innerHTML = '';
   } catch (err) {
     emailDraftText = previousDraft;
     showToast('Could not regenerate: ' + err.message);
@@ -2028,6 +2038,8 @@ function closeEmailModal() {
   document.getElementById('email-correction-input').value = '';
   const flagsEl = document.getElementById('email-flags');
   if (flagsEl) flagsEl.style.display = 'none';
+  const flagsList = document.getElementById('email-flags-list');
+  if (flagsList) flagsList.innerHTML = '';
 }
 
 function copyEmailDraft() {
@@ -2116,16 +2128,8 @@ function reset() {
   if (smsBody) { smsBody.value = ''; smsBody.placeholder = 'Generating suggestion…'; }
   const smsCount = document.getElementById('sms-char-count');
   if (smsCount) smsCount.textContent = '0 / 160';
-  const smsDate = document.getElementById('sms-date');
-  if (smsDate) smsDate.value = '';
-  const smsTimeBtn = document.getElementById('sms-time-btn');
-  if (smsTimeBtn) smsTimeBtn.textContent = '1:00 PM';
-  const smsTimeHidden = document.getElementById('sms-time');
-  if (smsTimeHidden) smsTimeHidden.value = '13:00';
   const smsPhoneRow = document.getElementById('sms-phone-row');
   if (smsPhoneRow) smsPhoneRow.style.display = 'none';
-  const smsDatetimeRow = document.getElementById('sms-datetime-row');
-  if (smsDatetimeRow) smsDatetimeRow.style.display = 'none';
   selectedSmsPhoneIdx = 0;
   document.getElementById('gen-email-btn').innerHTML = 'Generate follow-up email';
   document.getElementById('gen-email-btn').disabled = false;
