@@ -1,4 +1,4 @@
-// card-scanner-api v1.14.0
+// card-scanner-api v1.16.0
 //
 // CHANGELOG
 // v1.1.0  - Added /generate-email endpoint
@@ -15,6 +15,8 @@
 // v1.12.0 - SMS always includes the reminder date as a concrete proposed follow-up; framed as a question
 // v1.13.0 - /generate-email accepts optional correction field; injected into prompt for regeneration
 // v1.14.0 - /generate-email runs hallucination check after draft; returns flags[] of suspect claims
+// v1.15.0 - Hallucination check returns exact verbatim phrases for inline highlighting
+// v1.16.0 - Hallucination check returns both descriptions and phrases; both shown in modal
 //
 import express from 'express';
 import cors from 'cors';
@@ -320,13 +322,14 @@ ${notes}`
 
     // Run hallucination check against the actual email text
     let flags = [];
+    let phrases = [];
     try {
       const flagMsg = await client.messages.create({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 300,
         messages: [{
           role: 'user',
-          content: `Compare this email draft against the conversation notes and identify ONLY specific claims in the email that cannot be reasonably inferred from the notes.
+          content: `Compare this email draft against the conversation notes. Find specific claims in the email that cannot be reasonably inferred from the notes.
 
 Conversation notes:
 ${notes}
@@ -341,10 +344,12 @@ Do NOT flag:
 - The follow-up date or time
 - Anything that is a natural extension of what the notes say
 
-Only flag things that are specific and clearly not in the notes (e.g. a topic, product, or agreement that was never mentioned).
+For each issue found, return:
+- "description": a short plain-English description (under 10 words)
+- "phrase": the EXACT verbatim phrase from the email (2-8 words) to highlight
 
-Reply ONLY with raw JSON: {"flags": ["concise description under 10 words", ...]}
-If nothing is suspicious, return: {"flags": []}
+Reply ONLY with raw JSON: {"issues": [{"description": "...", "phrase": "..."}]}
+If nothing suspicious, return: {"issues": []}
 No markdown, no explanation.`
         }]
       });
@@ -353,11 +358,13 @@ No markdown, no explanation.`
       const fe = flagRaw.lastIndexOf('}');
       if (fs !== -1 && fe !== -1) {
         const parsed = JSON.parse(flagRaw.slice(fs, fe + 1));
-        flags = Array.isArray(parsed.flags) ? parsed.flags : [];
+        const issues = Array.isArray(parsed.issues) ? parsed.issues : [];
+        flags = issues.map(i => i.description).filter(Boolean);
+        phrases = issues.map(i => i.phrase).filter(Boolean);
       }
     } catch { /* hallucination check failed silently */ }
 
-    res.json({ email: emailText, followUpDate, followUpTime, flags });
+    res.json({ email: emailText, followUpDate, followUpTime, flags, phrases });
   } catch (err) {
     console.error('Error:', err.status, err.message, JSON.stringify(err.error));
     res.status(500).json({ error: err.message });
