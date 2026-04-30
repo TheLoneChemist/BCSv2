@@ -1,4 +1,4 @@
-<!-- card-scanner v1.54.0 -->
+<!-- card-scanner v1.55.0 -->
 <!--
 CHANGELOG
 v1.1.0  - Version tracking and AI disclaimer added
@@ -55,6 +55,7 @@ v1.51.0 - Polish notes chip and modal added with editable preview before committ
 v1.52.0 - SMS suggestion uses reminder date as fallback when notes have no date
 v1.53.0 - Email modal: correction field + Regenerate button so user can fix AI assumptions
 v1.54.0 - Fixed syntax error: copyEmailDraft function declaration was accidentally removed
+v1.55.0 - Email modal shows hallucination flags: items in the draft not found in the notes
 -->
 <!DOCTYPE html>
 <html lang="en">
@@ -462,6 +463,10 @@ v1.54.0 - Fixed syntax error: copyEmailDraft function declaration was accidental
     <div class="modal-title">✉️ Suggested Follow-up</div>
     <div class="modal-subtitle">Generated from your conversation notes</div>
     <div class="email-draft" id="email-draft-content"></div>
+    <div id="email-flags" style="display:none; background:#2a2018; border:1px solid #5a4020; border-radius:var(--radius-sm); padding:11px 13px; font-size:13px; color:#d4a96a; line-height:1.6; margin-top:4px;">
+      <div style="font-weight:600; margin-bottom:5px;">Double-check these:</div>
+      <ul id="email-flags-list" style="padding-left:16px; margin:0;"></ul>
+    </div>
     <div id="mailto-truncate-notice" style="display:none;font-size:12px;color:var(--muted);text-align:center;padding:2px 0;">Draft is long — your mail app may truncate it. Use "Copy" to paste the full text.</div>
     <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:2px;">
       <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">Something off? Add a correction and regenerate.</div>
@@ -1849,6 +1854,18 @@ async function generateEmailDraft() {
     if (data.error) throw new Error(data.error);
     emailDraftText = data.email || '';
     document.getElementById('email-draft-content').textContent = emailDraftText;
+
+    // Show hallucination flags if any
+    const flagsEl = document.getElementById('email-flags');
+    const flagsList = document.getElementById('email-flags-list');
+    const flags = data.flags || [];
+    if (flags.length > 0 && flagsEl && flagsList) {
+      flagsList.innerHTML = flags.map(f => `<li>${f}</li>`).join('');
+      flagsEl.style.display = 'block';
+    } else if (flagsEl) {
+      flagsEl.style.display = 'none';
+    }
+
     document.getElementById('email-modal').classList.remove('hidden');
 
     // If a follow-up date was detected, ask the user to confirm before setting
@@ -1993,6 +2010,9 @@ async function regenerateEmailDraft() {
     emailDraftText = data.email || '';
     draftEl.textContent = emailDraftText;
     document.getElementById('email-correction-input').value = '';
+    // Clear flags after regeneration
+    const flagsEl = document.getElementById('email-flags');
+    if (flagsEl) flagsEl.style.display = 'none';
   } catch (err) {
     emailDraftText = previousDraft;
     showToast('Could not regenerate: ' + err.message);
@@ -2006,6 +2026,8 @@ async function regenerateEmailDraft() {
 function closeEmailModal() {
   document.getElementById('email-modal').classList.add('hidden');
   document.getElementById('email-correction-input').value = '';
+  const flagsEl = document.getElementById('email-flags');
+  if (flagsEl) flagsEl.style.display = 'none';
 }
 
 function copyEmailDraft() {
