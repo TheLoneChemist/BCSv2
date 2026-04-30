@@ -1,6 +1,8 @@
-<!-- card-scanner v1.65.0 -->
+<!-- card-scanner v1.67.0 -->
 <!--
 CHANGELOG
+v1.67.0 - SMS suggestion now refreshes dynamically when the follow-up reminder date or time is changed
+v1.66.0 - Fixed SMS date race condition: extractDateFromNotes now returns date directly to generateTextSuggestion instead of relying on DOM read
 v1.65.0 - SMS uses exact meeting type from notes (lunch vs coffee); date passed as full weekday string to prevent substitution
 v1.64.0 - Subject line changed to "Name follow-up" format; SMS now waits for date extraction before generating so it uses the correct date
 v1.63.0 - Hallucination highlights preserved after regeneration; shared renderEmailDraft function
@@ -734,7 +736,7 @@ v1.1.0  - Version tracking and AI disclaimer added
   <div class="cal-row">
     <div class="cal-field">
       <div class="cal-label">Date</div>
-      <input type="date" id="cal-date">
+      <input type="date" id="cal-date" onchange="refreshSmsSuggestion()">
     </div>
     <div class="cal-field">
       <div class="cal-label">Time</div>
@@ -924,6 +926,18 @@ function setMeetingDate(val) {
     otherInput.focus();
     if (otherInput.value) meetingDate = otherInput.value;
   }
+}
+
+function refreshSmsSuggestion() {
+  const notes = document.getElementById('notes-field').value.trim();
+  if (!notes || notes.length < 10) return;
+  const calDate = document.getElementById('cal-date').value;
+  if (!calDate) return;
+  const d = new Date(calDate + 'T12:00:00');
+  const fallbackDate = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  const smsBody = document.getElementById('sms-body');
+  if (smsBody) smsBody.value = ''; // clear so generateTextSuggestion fills it fresh
+  generateTextSuggestion(notes, fallbackDate);
 }
 
 function updateCalBtn() {
@@ -1549,6 +1563,7 @@ function applyClockTime() {
   const btn = document.getElementById(btnId);
   if (btn) btn.textContent = display;
   document.getElementById('clock-modal').classList.add('hidden');
+  if (clockTargetId === 'cal') refreshSmsSuggestion();
 }
 
 const fieldLinkFns = {
@@ -1715,7 +1730,6 @@ function usePolishedNotes() {
   if (!polished) return;
   document.getElementById('notes-field').value = polished;
   document.getElementById('polish-modal').classList.add('hidden');
-  // Trigger text suggestion refresh with new notes
   scheduleTextSuggestion();
   showToast('Notes updated ✓');
 }
@@ -1731,9 +1745,8 @@ function scheduleTextSuggestion() {
   const notes = document.getElementById('notes-field').value.trim();
   if (!notes || notes.length < 10) return;
   textSuggestionTimer = setTimeout(async () => {
-    // Extract date first, then generate SMS with the correct date context
-    await extractDateFromNotes(notes);
-    generateTextSuggestion(notes);
+    const resolvedDate = await extractDateFromNotes(notes);
+    generateTextSuggestion(notes, resolvedDate);
   }, 1500);
 }
 
@@ -1744,13 +1757,10 @@ async function extractDateFromNotes(notes) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ notes, meetingDate })
     });
-    if (!res.ok) return;
+    if (!res.ok) return null;
     const data = await res.json();
     if (data.followUpDate) {
-      pendingFollowUpDate = data.followUpDate;
-      pendingFollowUpTime = data.followUpTime || null;
-
-      // Silently update the calendar date/time
+      // Update the calendar date/time
       document.getElementById('cal-date').value = data.followUpDate;
       if (data.followUpTime) {
         document.getElementById('cal-time').value = data.followUpTime;
@@ -1759,30 +1769,32 @@ async function extractDateFromNotes(notes) {
         const btn = document.getElementById('cal-time-btn');
         if (btn) btn.textContent = fmt12(h, m, ap);
       }
-      // Update SMS fallback date
+      // Return formatted date string for SMS use
       const d = new Date(data.followUpDate + 'T12:00:00');
-      const fallbackDate = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-      // Refresh SMS suggestion with new date context if body is still auto-generated
-      const smsBody = document.getElementById('sms-body');
-      if (smsBody && smsBody.value) {
-        // Only regenerate if it looks like the previous auto-suggestion (not user-edited)
-        generateTextSuggestion(notes);
-      }
+      return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
     }
   } catch { /* silent */ }
+  // Fall back to whatever is in the calendar date picker
+  const calDate = document.getElementById('cal-date').value;
+  if (calDate) {
+    const d = new Date(calDate + 'T12:00:00');
+    return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  }
+  return null;
 }
 
-async function generateTextSuggestion(notes) {
+async function generateTextSuggestion(notes, fallbackDate) {
   const body = document.getElementById('sms-body');
   if (!body) return;
   body.placeholder = 'Generating suggestion…';
 
-  // Pass the reminder date as fallback — include full weekday + date for specificity
-  const calDate = document.getElementById('cal-date').value || null;
-  let fallbackDate = null;
-  if (calDate) {
-    const d = new Date(calDate + 'T12:00:00');
-    fallbackDate = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  // If no date passed in, read from cal-date as last resort
+  if (!fallbackDate) {
+    const calDate = document.getElementById('cal-date').value || null;
+    if (calDate) {
+      const d = new Date(calDate + 'T12:00:00');
+      fallbackDate = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    }
   }
 
   try {
@@ -1793,7 +1805,7 @@ async function generateTextSuggestion(notes) {
     });
     if (!res.ok) throw new Error(`Server error ${res.status}`);
     const data = await res.json();
-    if (data.message && !body.value) {
+    if (data.message) {
       body.value = data.message;
       const count = document.getElementById('sms-char-count');
       if (count) count.textContent = `${data.message.length} / 160`;
@@ -2013,6 +2025,7 @@ function confirmFollowUpDate() {
     showToast('Follow-up date & time updated ✓');
     pendingFollowUpDate = null;
     pendingFollowUpTime = null;
+    refreshSmsSuggestion();
   }
   document.getElementById('date-confirm-modal').classList.add('hidden');
 }
@@ -2044,6 +2057,7 @@ function applyCustomDate() {
   if (btn) btn.textContent = fmt12(h, m, ap);
   document.getElementById('date-picker-modal').classList.add('hidden');
   showToast('Follow-up date & time updated ✓');
+  refreshSmsSuggestion();
 }
 
 function openInMailApp() {
