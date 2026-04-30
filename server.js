@@ -1,6 +1,7 @@
-// card-scanner-api v1.18.0
+// card-scanner-api v1.19.0
 //
 // CHANGELOG
+// v1.19.0 - Added /extract-date endpoint for live calendar updates as user types notes
 // v1.18.0 - /generate-email accepts meetingDate; date extractor resolves relative dates from meeting date, not today
 // v1.17.0 - Date extractor now always resolves named weekdays to next upcoming occurrence, never past
 // v1.16.0 - Hallucination check returns both descriptions and phrases; both shown in modal
@@ -204,6 +205,41 @@ Rules:
   } catch (err) {
     console.error('Error:', err.status, err.message, JSON.stringify(err.error));
     res.status(500).json({ error: err.message });
+  }
+});
+
+// Lightweight date/time extraction from notes (used to update calendar as user types)
+app.post('/extract-date', async (req, res) => {
+  const { notes, meetingDate } = req.body;
+  if (!notes) return res.status(400).json({ followUpDate: null, followUpTime: null });
+
+  const today = new Date().toISOString().split('T')[0];
+  const refDate = meetingDate || today;
+  const refDateLabel = new Date(refDate + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+
+  try {
+    const msg = await client.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 100,
+      messages: [{
+        role: 'user',
+        content: `Today is ${today} (${new Date(today).toLocaleDateString('en-US', {weekday:'long'})}). The meeting took place on ${refDateLabel}. Read the notes and extract a follow-up date and time if mentioned.
+
+1. Follow-up DATE: Resolve relative to the meeting date. Named weekdays must be the NEXT occurrence after the meeting date. Return null if not mentioned.
+2. Follow-up TIME: Infer from context ("coffee"→"10:00", "lunch"→"12:00", "afternoon"→"14:00", "drinks"/"happy hour"→"18:00", "dinner"→"19:00", "morning"→"09:00", specific time→that time). Return null if unclear.
+
+Reply ONLY with raw JSON: {"followUpDate": "YYYY-MM-DD" or null, "followUpTime": "HH:MM" or null}
+
+Notes: ${notes}`
+      }]
+    });
+    const raw = msg.content.map(b => b.text || '').join('').trim();
+    const s = raw.indexOf('{'); const e = raw.lastIndexOf('}');
+    if (s === -1 || e === -1) return res.json({ followUpDate: null, followUpTime: null });
+    const parsed = JSON.parse(raw.slice(s, e + 1));
+    res.json({ followUpDate: parsed.followUpDate || null, followUpTime: parsed.followUpTime || null });
+  } catch (err) {
+    res.json({ followUpDate: null, followUpTime: null });
   }
 });
 
