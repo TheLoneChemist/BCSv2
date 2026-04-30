@@ -1,6 +1,7 @@
-<!-- card-scanner v1.63.0 -->
+<!-- card-scanner v1.64.0 -->
 <!--
 CHANGELOG
+v1.64.0 - Subject line changed to "Name follow-up" format; SMS now waits for date extraction before generating so it uses the correct date
 v1.63.0 - Hallucination highlights preserved after regeneration; shared renderEmailDraft function
 v1.62.0 - Regenerate button moved to right of correction textarea; replaced with spinning arrow icon
 v1.61.0 - Calendar and SMS dates update dynamically as notes are typed; em dash removed from subject line; Regenerate button made compact
@@ -1728,9 +1729,10 @@ function scheduleTextSuggestion() {
   clearTimeout(textSuggestionTimer);
   const notes = document.getElementById('notes-field').value.trim();
   if (!notes || notes.length < 10) return;
-  textSuggestionTimer = setTimeout(() => {
+  textSuggestionTimer = setTimeout(async () => {
+    // Extract date first, then generate SMS with the correct date context
+    await extractDateFromNotes(notes);
     generateTextSuggestion(notes);
-    extractDateFromNotes(notes);
   }, 1500);
 }
 
@@ -2047,7 +2049,7 @@ function openInMailApp() {
   if (!emailDraftText) return;
   const to = (currentData && currentData.email) ? encodeURIComponent(currentData.email) : '';
   const name = (currentData && currentData.name) ? currentData.name : '';
-  const subject = encodeURIComponent(`Following up${name ? ', ' + name : ''}`);
+  const subject = encodeURIComponent(name ? `${name} follow-up` : 'Follow-up');
 
   // mailto body is limited to ~1900 chars to stay safe across OS/browsers
   const LIMIT = 1900;
