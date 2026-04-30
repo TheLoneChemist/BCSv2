@@ -1,6 +1,7 @@
-<!-- card-scanner v1.61.0 -->
+<!-- card-scanner v1.62.0 -->
 <!--
 CHANGELOG
+v1.62.0 - Regenerate button moved to right of correction textarea; replaced with spinning arrow icon
 v1.61.0 - Calendar and SMS dates update dynamically as notes are typed; em dash removed from subject line; Regenerate button made compact
 v1.60.0 - Meeting date selector added above Scan card button (Yesterday / Today / Other)
 v1.59.0 - Removed date and time chips from follow-up text message section
@@ -503,20 +504,29 @@ v1.1.0  - Version tracking and AI disclaimer added
     <div id="mailto-truncate-notice" style="display:none;font-size:12px;color:var(--muted);text-align:center;padding:2px 0;">Draft is long — your mail app may truncate it. Use "Copy" to paste the full text.</div>
     <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:2px;">
       <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">Something off? Add a correction and regenerate.</div>
-      <textarea id="email-correction-input" rows="2" style="
-        width:100%;background:var(--surface2);border:1px solid var(--border);
-        border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;
-        font-size:14px;padding:10px 12px;resize:none;outline:none;
-        transition:border-color 0.15s;line-height:1.5;
-      " placeholder='e.g. "We were at a conference about pens, not a pen shop"'
-        onfocus="this.style.borderColor='var(--accent2)'"
-        onblur="this.style.borderColor='var(--border)'"></textarea>
-      <button id="regenerate-btn" onclick="regenerateEmailDraft()" style="
-        margin-top:8px; padding:7px 16px; border-radius:var(--radius-sm);
-        border:1px solid var(--border); background:var(--surface2);
-        color:var(--text); font-family:'DM Sans',sans-serif;
-        font-size:13px; font-weight:600; cursor:pointer; transition:background 0.15s;
-      ">Regenerate</button>
+      <div style="display:flex;gap:8px;align-items:flex-start;">
+        <textarea id="email-correction-input" rows="2" style="
+          flex:1;background:var(--surface2);border:1px solid var(--border);
+          border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;
+          font-size:14px;padding:10px 12px;resize:none;outline:none;
+          transition:border-color 0.15s;line-height:1.5;
+        " placeholder='e.g. "We were at a conference, not a shop"'
+          onfocus="this.style.borderColor='var(--accent2)'"
+          onblur="this.style.borderColor='var(--border)'"></textarea>
+        <button id="regenerate-btn" onclick="regenerateEmailDraft()" title="Regenerate" style="
+          flex-shrink:0;width:38px;height:38px;margin-top:1px;
+          border-radius:var(--radius-sm);border:1px solid var(--border);
+          background:var(--surface);cursor:pointer;
+          display:flex;align-items:center;justify-content:center;
+          transition:border-color 0.15s,background 0.15s;
+        " onmouseover="this.style.borderColor='var(--accent2)';this.style.background='var(--surface2)'"
+           onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--surface)'">
+          <svg id="regen-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent2)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="1 4 1 10 7 10"/>
+            <path d="M3.51 15a9 9 0 1 0 .49-4.5"/>
+          </svg>
+        </button>
+      </div>
     </div>
     <div style="display:flex;gap:8px;margin-top:4px;">
       <button onclick="openInMailApp()" style="
@@ -2081,8 +2091,9 @@ async function regenerateEmailDraft() {
   if (!correction) { showToast('Add a correction first'); return; }
 
   const btn = document.getElementById('regenerate-btn');
+  const icon = document.getElementById('regen-icon');
   btn.disabled = true;
-  btn.innerHTML = '<span class="dot-spin"></span> Regenerating…';
+  if (icon) icon.style.animation = 'spin 0.7s linear infinite';
 
   const draftEl = document.getElementById('email-draft-content');
   const previousDraft = emailDraftText;
@@ -2119,7 +2130,8 @@ async function regenerateEmailDraft() {
   } finally {
     draftEl.style.opacity = '1';
     btn.disabled = false;
-    btn.innerHTML = 'Regenerate';
+    const icon = document.getElementById('regen-icon');
+    if (icon) icon.style.animation = '';
   }
 }
 
