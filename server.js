@@ -1,4 +1,4 @@
-// card-scanner-api v1.12.0
+// card-scanner-api v1.13.0
 //
 // CHANGELOG
 // v1.1.0  - Added /generate-email endpoint
@@ -13,6 +13,7 @@
 // v1.10.0 - Em dashes banned from all generated text (email, SMS, polish)
 // v1.11.0 - /generate-text always produces a message even with vague notes; never asks for clarification
 // v1.12.0 - SMS always includes the reminder date as a concrete proposed follow-up; framed as a question
+// v1.13.0 - /generate-email accepts optional correction field; injected into prompt for regeneration
 //
 import express from 'express';
 import cors from 'cors';
@@ -203,7 +204,7 @@ Rules:
 
 // Generate follow-up email draft from conversation notes
 app.post('/generate-email', async (req, res) => {
-  const { contact, notes, paragraphs, tone, followUpDate, followUpTime } = req.body;
+  const { contact, notes, paragraphs, tone, followUpDate, followUpTime, correction } = req.body;
 
   if (!notes) {
     return res.status(400).json({ error: 'Missing notes' });
@@ -238,6 +239,10 @@ app.post('/generate-email', async (req, res) => {
     }
   }
 
+  const correctionHint = correction
+    ? `\n- Important correction from the user: "${correction}" — adjust the email to reflect this accurately`
+    : '';
+
   try {
     // Run email generation and date extraction in parallel
     const [emailMsg, dateMsg] = await Promise.all([
@@ -261,7 +266,7 @@ Instructions:
 - Address them by first name (${firstName})
 - Reference the conversation naturally
 - Write EXACTLY ${paraCount} paragraph${paraCount > 1 ? 's' : ''} — no more, no fewer
-- End with a clear next step${paraCount === 1 ? ' (work it into the single paragraph)' : ''}${dateTimeHint}
+- End with a clear next step${paraCount === 1 ? ' (work it into the single paragraph)' : ''}${dateTimeHint}${correctionHint}
 - Don't use excessive pleasantries or filler
 - Never use em dashes (—) — use commas, periods, or reword instead
 - Sign off as "Best," then leave a blank line for my name
