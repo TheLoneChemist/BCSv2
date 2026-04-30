@@ -1,4 +1,4 @@
-// card-scanner-api v1.8.0
+// card-scanner-api v1.10.0
 import express from 'express';
 import cors from 'cors';
 import Anthropic from '@anthropic-ai/sdk';
@@ -248,6 +248,7 @@ Instructions:
 - Write EXACTLY ${paraCount} paragraph${paraCount > 1 ? 's' : ''} — no more, no fewer
 - End with a clear next step${paraCount === 1 ? ' (work it into the single paragraph)' : ''}${dateTimeHint}
 - Don't use excessive pleasantries or filler
+- Never use em dashes (—) — use commas, periods, or reword instead
 - Sign off as "Best," then leave a blank line for my name
 - Output ONLY the email body, no subject line, no explanation`
         }]
@@ -330,6 +331,7 @@ Instructions:
 - Remove filler words and redundancy
 - Keep it concise but complete — 2 to 4 sentences is ideal
 - Preserve any specific dates, names, or numbers exactly as given
+- Never use em dashes (—) — use commas, periods, or reword instead
 - Output ONLY the polished notes, no preamble or explanation`
       }]
     });
@@ -343,11 +345,14 @@ Instructions:
 
 // Generate one-line follow-up text message suggestion
 app.post('/generate-text', async (req, res) => {
-  const { contact, notes } = req.body;
+  const { contact, notes, fallbackDate } = req.body;
   if (!notes) return res.status(400).json({ error: 'Missing notes' });
 
   const d = contact || {};
   const firstName = (d.name || '').split(' ')[0] || 'there';
+  const dateHint = fallbackDate
+    ? `\n- If the notes don't mention a specific follow-up date, naturally reference ${fallbackDate} as the follow-up`
+    : '';
 
   try {
     const msg = await client.messages.create({
@@ -364,10 +369,11 @@ Rules:
 - 1 sentence if possible, 2 sentences maximum
 - Casual, warm, natural — like a real text message
 - Reference the conversation briefly
-- If a specific follow-up date, time, or meeting is mentioned in the notes, include it naturally in the message
+- If a specific follow-up date, time, or meeting is mentioned in the notes, include it naturally in the message${dateHint}
 - No sign-off or name needed
 - NO emojis — none at all
 - No exclamation marks unless absolutely natural
+- Never use em dashes (—) — use commas, periods, or reword instead
 - Output ONLY the message text, nothing else`
       }]
     });
