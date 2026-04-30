@@ -1,4 +1,4 @@
-// card-scanner-api v1.13.0
+// card-scanner-api v1.14.0
 //
 // CHANGELOG
 // v1.1.0  - Added /generate-email endpoint
@@ -14,6 +14,7 @@
 // v1.11.0 - /generate-text always produces a message even with vague notes; never asks for clarification
 // v1.12.0 - SMS always includes the reminder date as a concrete proposed follow-up; framed as a question
 // v1.13.0 - /generate-email accepts optional correction field; injected into prompt for regeneration
+// v1.14.0 - /generate-email runs hallucination check after draft; returns flags[] of suspect claims
 //
 import express from 'express';
 import cors from 'cors';
@@ -315,9 +316,48 @@ ${notes}`
         followUpDate = parsed.followUpDate || null;
         followUpTime = parsed.followUpTime || null;
       }
-    } catch { /* date extraction failed silently — not critical */ }
+    } catch { /* date extraction failed silently */ }
 
-    res.json({ email: emailText, followUpDate, followUpTime });
+    // Run hallucination check against the actual email text
+    let flags = [];
+    try {
+      const flagMsg = await client.messages.create({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 300,
+        messages: [{
+          role: 'user',
+          content: `Compare this email draft against the conversation notes and identify ONLY specific claims in the email that cannot be reasonably inferred from the notes.
+
+Conversation notes:
+${notes}
+
+Email draft:
+${emailText}
+
+Do NOT flag:
+- Generic pleasantries or sign-offs
+- Reasonable social inferences ("looking forward to connecting")
+- The contact's name, title, or company
+- The follow-up date or time
+- Anything that is a natural extension of what the notes say
+
+Only flag things that are specific and clearly not in the notes (e.g. a topic, product, or agreement that was never mentioned).
+
+Reply ONLY with raw JSON: {"flags": ["concise description under 10 words", ...]}
+If nothing is suspicious, return: {"flags": []}
+No markdown, no explanation.`
+        }]
+      });
+      const flagRaw = flagMsg.content.map(b => b.text || '').join('').trim();
+      const fs = flagRaw.indexOf('{');
+      const fe = flagRaw.lastIndexOf('}');
+      if (fs !== -1 && fe !== -1) {
+        const parsed = JSON.parse(flagRaw.slice(fs, fe + 1));
+        flags = Array.isArray(parsed.flags) ? parsed.flags : [];
+      }
+    } catch { /* hallucination check failed silently */ }
+
+    res.json({ email: emailText, followUpDate, followUpTime, flags });
   } catch (err) {
     console.error('Error:', err.status, err.message, JSON.stringify(err.error));
     res.status(500).json({ error: err.message });
