@@ -1,6 +1,9 @@
-// card-scanner-api v1.22.0
+// card-scanner-api v1.25.0
 //
 // CHANGELOG
+// v1.25.0 - SMS prefers one sentence but allows more if needed, hard limit is 160 characters
+// v1.24.0 - SMS length rule changed from "2 sentences max" to "160 characters maximum"
+// v1.23.0 - Email prompt treats passed followUpDate as authoritative; model forbidden from re-deriving date from notes
 // v1.22.0 - Email draft now starts with "Hello [Name]," greeting (or "Hi" for casual tone)
 // v1.21.0 - SMS framing restored to question format while keeping date and meeting type exact
 // v1.20.0 - /generate-text uses exact meeting type from notes; date treated as immutable; framed as confirmation not question
@@ -283,9 +286,9 @@ app.post('/generate-email', async (req, res) => {
       const ap = h24 >= 12 ? 'PM' : 'AM';
       const h12 = h24 % 12 || 12;
       const timeStr = `${h12}:${String(m).padStart(2,'0')} ${ap}`;
-      dateTimeHint = `\n- Propose the follow-up meeting for ${dateStr} at ${timeStr} — work this into the email naturally`;
+      dateTimeHint = `\n- The follow-up is confirmed for ${dateStr} at ${timeStr} — use this exact date and time, do not derive a different date from the notes`;
     } else {
-      dateTimeHint = `\n- Propose the follow-up meeting for ${dateStr} — work this into the email naturally`;
+      dateTimeHint = `\n- The follow-up is confirmed for ${dateStr} — use this exact date, do not derive a different date from the notes`;
     }
   }
 
@@ -483,7 +486,7 @@ Notes: ${notes}
 Follow-up date: ${fallbackDate || 'soon'}
 
 Rules:
-- 1 sentence if possible, 2 sentences maximum
+- 160 characters maximum — stay under this limit; one sentence is preferred if it fits
 - Casual, warm, natural — like a real text message
 - Reference the conversation as specifically as you can
 - Always produce a message no matter how little detail is in the notes — never ask for clarification or refuse
