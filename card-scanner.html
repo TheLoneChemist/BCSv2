@@ -1,6 +1,7 @@
-<!-- card-scanner v1.62.0 -->
+<!-- card-scanner v1.63.0 -->
 <!--
 CHANGELOG
+v1.63.0 - Hallucination highlights preserved after regeneration; shared renderEmailDraft function
 v1.62.0 - Regenerate button moved to right of correction textarea; replaced with spinning arrow icon
 v1.61.0 - Calendar and SMS dates update dynamically as notes are typed; em dash removed from subject line; Regenerate button made compact
 v1.60.0 - Meeting date selector added above Scan card button (Yesterday / Today / Other)
@@ -1956,29 +1957,7 @@ async function generateEmailDraft() {
 
     const flags = data.flags || [];
     const phrases = data.phrases || [];
-    const draftEl = document.getElementById('email-draft-content');
-    const flagsEl = document.getElementById('email-flags');
-    const flagsList = document.getElementById('email-flags-list');
-
-    if (flags.length > 0) {
-      // Populate description list
-      if (flagsList) flagsList.innerHTML = flags.map(f => `<li>${f}</li>`).join('');
-      if (flagsEl) flagsEl.style.display = 'block';
-
-      // Highlight matching phrases inline in the draft
-      let html = emailDraftText
-        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-      phrases.forEach(phrase => {
-        if (!phrase) return;
-        const escaped = phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const re = new RegExp(`(${escaped})`, 'gi');
-        html = html.replace(re, '<mark class="email-flag-highlight" title="May not match your notes">$1</mark>');
-      });
-      draftEl.innerHTML = html.replace(/\n/g, '<br>');
-    } else {
-      draftEl.textContent = emailDraftText;
-      if (flagsEl) flagsEl.style.display = 'none';
-    }
+    renderEmailDraft(emailDraftText, flags, phrases);
 
     document.getElementById('email-modal').classList.remove('hidden');
 
@@ -2086,6 +2065,30 @@ function openInMailApp() {
   window.location.href = mailto;
 }
 
+function renderEmailDraft(text, flags, phrases) {
+  const draftEl = document.getElementById('email-draft-content');
+  const flagsEl = document.getElementById('email-flags');
+  const flagsList = document.getElementById('email-flags-list');
+  if (!draftEl) return;
+
+  if (flags && flags.length > 0) {
+    if (flagsList) flagsList.innerHTML = flags.map(f => `<li>${f}</li>`).join('');
+    if (flagsEl) flagsEl.style.display = 'block';
+    let html = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    (phrases || []).forEach(phrase => {
+      if (!phrase) return;
+      const escaped = phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      html = html.replace(new RegExp(`(${escaped})`, 'gi'),
+        '<mark class="email-flag-highlight" title="May not match your notes">$1</mark>');
+    });
+    draftEl.innerHTML = html.replace(/\n/g, '<br>');
+  } else {
+    draftEl.textContent = text;
+    if (flagsEl) flagsEl.style.display = 'none';
+    if (flagsList) flagsList.innerHTML = '';
+  }
+}
+
 async function regenerateEmailDraft() {
   const correction = document.getElementById('email-correction-input').value.trim();
   if (!correction) { showToast('Add a correction first'); return; }
@@ -2118,12 +2121,8 @@ async function regenerateEmailDraft() {
     const data = await res.json();
     if (data.error) throw new Error(data.error);
     emailDraftText = data.email || '';
-    draftEl.textContent = emailDraftText;
+    renderEmailDraft(emailDraftText, data.flags || [], data.phrases || []);
     document.getElementById('email-correction-input').value = '';
-    const flagsEl2 = document.getElementById('email-flags');
-    const flagsList2 = document.getElementById('email-flags-list');
-    if (flagsEl2) flagsEl2.style.display = 'none';
-    if (flagsList2) flagsList2.innerHTML = '';
   } catch (err) {
     emailDraftText = previousDraft;
     showToast('Could not regenerate: ' + err.message);
