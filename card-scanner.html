@@ -1,4 +1,4 @@
-<!-- card-scanner v1.50.0 -->
+<!-- card-scanner v1.51.0 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -428,9 +428,30 @@
   </div>
 </div>
 
-<!-- Date picker modal -->
-<div class="modal-overlay hidden" id="date-picker-modal">
+<!-- Polish notes modal -->
+<div class="modal-overlay hidden" id="polish-modal">
   <div class="modal-sheet">
+    <div class="modal-title">Polish notes</div>
+    <div class="modal-subtitle">Review and adjust before committing</div>
+    <textarea id="polish-textarea" style="
+      width:100%; background:var(--surface2); border:1px solid var(--border);
+      border-radius:var(--radius-sm); color:var(--text);
+      font-family:'DM Sans',sans-serif; font-size:14px;
+      padding:12px; resize:vertical; min-height:140px; outline:none;
+      transition:border-color 0.15s; line-height:1.6;
+    " onfocus="this.style.borderColor='var(--accent2)'"
+       onblur="this.style.borderColor='var(--border)'"
+       placeholder="Polishing your notes…"></textarea>
+    <div id="polish-generating" class="generating-badge" style="display:none;">
+      <span class="dot-spin"></span> Polishing…
+    </div>
+    <button class="modal-btn primary" id="polish-use-btn" onclick="usePolishedNotes()">Use these notes</button>
+    <button class="modal-btn cancel" onclick="document.getElementById('polish-modal').classList.add('hidden')">Cancel</button>
+  </div>
+</div>
+
+<!-- Date picker modal -->
+<div class="modal-overlay hidden" id="date-picker-modal">  <div class="modal-sheet">
     <div class="modal-title">📅 Choose a date &amp; time</div>
     <div class="modal-subtitle">Set your preferred follow-up date and time</div>
     <div style="display:flex;flex-direction:column;gap:12px;margin-top:4px;">
@@ -534,6 +555,9 @@
     Conversation notes
   </div>
   <textarea class="notes-field" id="notes-field" placeholder="What did you talk about? Any key takeaways, promises, dates, or context… These notes will be used to generate your follow-ups, and will be saved to the contact on your phone." style="min-height: 140px;" oninput="scheduleTextSuggestion()"></textarea>
+  <div style="display:flex; justify-content:flex-end; margin-top:6px;">
+    <button class="edit-chip" id="polish-btn" onclick="polishNotes()" style="font-size:13px; padding:5px 14px;">Polish notes?</button>
+  </div>
 
   <hr class="section-sep">
   <div class="section-title" style="margin-bottom: 10px;">
@@ -1513,6 +1537,51 @@ function saveField(key) {
     if (contactLabel) contactLabel.textContent = firstName || 'Contact';
   }
 }
+/* ─── Polish notes ──────────────────────────────────── */
+async function polishNotes() {
+  const raw = document.getElementById('notes-field').value.trim();
+  if (!raw) { showToast('Add some notes first'); return; }
+
+  const modal = document.getElementById('polish-modal');
+  const ta = document.getElementById('polish-textarea');
+  const badge = document.getElementById('polish-generating');
+  const useBtn = document.getElementById('polish-use-btn');
+
+  ta.value = '';
+  ta.placeholder = 'Polishing your notes…';
+  badge.style.display = 'flex';
+  useBtn.disabled = true;
+  modal.classList.remove('hidden');
+
+  try {
+    const res = await fetch(`${API}/polish-notes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ notes: raw, contact: currentData })
+    });
+    if (!res.ok) throw new Error(`Server error ${res.status}`);
+    const data = await res.json();
+    ta.value = data.polished || '';
+    ta.placeholder = '';
+  } catch (err) {
+    ta.placeholder = 'Could not polish notes. Try again.';
+    showToast('Error: ' + err.message);
+  } finally {
+    badge.style.display = 'none';
+    useBtn.disabled = false;
+  }
+}
+
+function usePolishedNotes() {
+  const polished = document.getElementById('polish-textarea').value.trim();
+  if (!polished) return;
+  document.getElementById('notes-field').value = polished;
+  document.getElementById('polish-modal').classList.add('hidden');
+  // Trigger text suggestion refresh with new notes
+  scheduleTextSuggestion();
+  showToast('Notes updated ✓');
+}
+
 /* ─── SMS text message ─────────────────────────────── */
 let textSuggestionTimer = null;
 
