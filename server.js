@@ -1,6 +1,8 @@
-// card-scanner-api v1.19.0
+// card-scanner-api v1.21.0
 //
 // CHANGELOG
+// v1.21.0 - SMS framing restored to question format while keeping date and meeting type exact
+// v1.20.0 - /generate-text uses exact meeting type from notes; date treated as immutable; framed as confirmation not question
 // v1.19.0 - Added /extract-date endpoint for live calendar updates as user types notes
 // v1.18.0 - /generate-email accepts meetingDate; date extractor resolves relative dates from meeting date, not today
 // v1.17.0 - Date extractor now always resolves named weekdays to next upcoming occurrence, never past
@@ -476,14 +478,16 @@ app.post('/generate-text', async (req, res) => {
 
 Contact first name: ${firstName}
 Notes: ${notes}
+Follow-up date: ${fallbackDate || 'soon'}
 
 Rules:
 - 1 sentence if possible, 2 sentences maximum
 - Casual, warm, natural — like a real text message
-- Reference the conversation as specifically as you can, but if notes are vague, write a warm generic follow-up
+- Reference the conversation as specifically as you can
 - Always produce a message no matter how little detail is in the notes — never ask for clarification or refuse
-- Always include the specific follow-up date (${fallbackDate || 'soon'}) in the message — propose it as a concrete time to connect, call, or meet
-- Frame the date as a question or suggestion (e.g. "Would Thursday work?", "Are you free Friday?") to keep it conversational
+- Always include the exact follow-up date provided above (${fallbackDate || 'soon'}) — do not change or approximate it
+- If the notes mention a specific type of meeting (lunch, coffee, call, dinner, etc.) use that exact type — do not substitute a different one
+- Frame it as a question confirming the plan (e.g. "Still on for lunch Wednesday, May 6?" or "Are we still on for lunch on Wednesday?")
 - No sign-off or name needed
 - NO emojis — none at all
 - No exclamation marks unless absolutely natural
