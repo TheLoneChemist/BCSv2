@@ -1,6 +1,8 @@
-// card-scanner-api v1.27.0
+// card-scanner-api v1.29.0
 //
 // CHANGELOG
+// v1.29.0 - Named weekdays now resolve from today (not meeting date) in all date extractors
+// v1.28.0 - Email prompt forbids relative date words; infers sensible meal time hints; confirmed dates use definitive language
 // v1.27.0 - Date extractors now distinguish writing date (today) vs meeting date: relative terms resolve from today, named weekdays from meeting date
 // v1.26.0 - Added /fetch-vcf endpoint; fetches and parses vCard from URL embedded in QR code
 // v1.25.0 - SMS prefers one sentence but allows more if needed, hard limit is 160 characters
@@ -280,7 +282,7 @@ app.post('/extract-date', async (req, res) => {
 
 1. Follow-up DATE — use these rules:
    - Relative terms ("tomorrow", "in 2 days", "next week", "in a few days") → resolve from TODAY (${today}), because the user is writing today, not on the meeting date
-   - Named weekdays ("Wednesday", "next Tuesday") → resolve to the NEXT UPCOMING occurrence AFTER the meeting date (${refDateLabel}), never a past date
+   - Named weekdays ("Wednesday", "next Tuesday") → resolve to the NEXT UPCOMING occurrence AFTER today (${today}), never a past date
    - Specific dates ("March 15th", "May 7") → resolve as written
    - Return null if no date is mentioned
 
@@ -338,9 +340,15 @@ app.post('/generate-email', async (req, res) => {
       const ap = h24 >= 12 ? 'PM' : 'AM';
       const h12 = h24 % 12 || 12;
       const timeStr = `${h12}:${String(m).padStart(2,'0')} ${ap}`;
-      dateTimeHint = `\n- The follow-up is confirmed for ${dateStr} at ${timeStr} — use this exact date and time, do not derive a different date from the notes`;
+      dateTimeHint = `\n- The follow-up is confirmed for ${dateStr} at ${timeStr} — use this exact date and time\n- Never use relative words like "tomorrow", "today", "next week" — always use the specific date\n- The date is confirmed, use definitive language (not "if this works" or "let me know if this time works")`;
     } else {
-      dateTimeHint = `\n- The follow-up is confirmed for ${dateStr} — use this exact date, do not derive a different date from the notes`;
+      // Infer a sensible time hint from the notes context
+      const notesLower = notes.toLowerCase();
+      let mealHint = '';
+      if (notesLower.includes('dinner')) mealHint = ' (dinner is typically in the evening, around 6-8 PM)';
+      else if (notesLower.includes('lunch')) mealHint = ' (lunch is typically around noon)';
+      else if (notesLower.includes('coffee') || notesLower.includes('breakfast')) mealHint = ' (morning meetings are typically 9-11 AM)';
+      dateTimeHint = `\n- The follow-up is confirmed for ${dateStr}${mealHint} — use this exact date\n- Never use relative words like "tomorrow", "today", "next week" — always use the specific date\n- The date is confirmed, use definitive language (not "if this works" or "let me know if this time works")`;
     }
   }
 
@@ -389,8 +397,8 @@ Instructions:
 
 1. Follow-up DATE — use these rules:
    - Relative terms ("tomorrow", "in 2 days", "next week", "in a few days") → resolve from TODAY (${today}), because the user is writing today, not on the meeting date
-   - Named weekdays ("Wednesday", "next Tuesday") → resolve to the NEXT UPCOMING occurrence AFTER the meeting date (${refDateLabel}), never a past date
-   - "Next [weekday]" always means the following week's occurrence from the meeting date
+   - Named weekdays ("Wednesday", "next Tuesday") → resolve to the NEXT UPCOMING occurrence AFTER today (${today}), never a past date
+   - "Next [weekday]" always means the following week's occurrence from today
    - Specific dates ("March 15th", "May 7") → resolve as written
    - If no date is mentioned, return null
 
