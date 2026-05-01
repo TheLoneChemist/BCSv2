@@ -1,6 +1,7 @@
-<!-- card-scanner v1.73.0 -->
+<!-- card-scanner v1.74.0 -->
 <!--
 CHANGELOG
+v1.74.0 - Fixed clock hour selection off-by-one: corrected angle normalization and hand position formula
 v1.73.0 - SMS defaults to cell phone number when available, falls back to first populated phone
 v1.72.0 - Double-check items now sorted by order they appear in email; Adjust Date button correctly positioned
 v1.71.0 - Email modal: Adjust date chip opens date picker; Date confirm modal: interactive clock button for time adjustment
@@ -1534,13 +1535,16 @@ function clockCanvasClick(e) {
   const canvas = document.getElementById('clock-canvas');
   const rect = canvas.getBoundingClientRect();
   const cx = 110, cy = 110;
-  const r = 90;
   const x = e.clientX - rect.left - cx;
   const y = e.clientY - rect.top - cy;
+  // Rotate so 0° is at top (12 o'clock), increasing clockwise
   const angle = Math.atan2(y, x) + Math.PI / 2;
-  const deg = ((angle * 180 / Math.PI) + 360) % 360;
+  const norm = ((angle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+  const deg = norm * 180 / Math.PI;
+
   if (clockMode === 'hour') {
-    clockHour = Math.round(deg / 30) % 12 || 12;
+    const idx = Math.round(deg / 30) % 12; // 0=val1, 9=val10, 11=val12
+    clockHour = idx + 1;
     clockMode = 'minute';
   } else {
     clockMinute = Math.round(deg / 6) % 60;
@@ -1604,7 +1608,7 @@ function renderClock() {
   });
 
   const handAng = clockMode === 'hour'
-    ? ((clockHour % 12) / 12) * Math.PI * 2 - Math.PI / 2
+    ? ((clockHour - 1) / 12) * Math.PI * 2 - Math.PI / 2
     : (clockMinute / 60) * Math.PI * 2 - Math.PI / 2;
   ctx.beginPath();
   ctx.moveTo(cx, cy);
