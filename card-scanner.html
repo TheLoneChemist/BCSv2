@@ -1,7 +1,8 @@
-<!-- card-scanner v1.72.0 -->
+<!-- card-scanner v1.73.0 -->
 <!--
 CHANGELOG
-v1.72.0 - Double-check items now sorted by order they appear in email; Adjust Date button already correctly positioned beside correction textarea
+v1.73.0 - SMS defaults to cell phone number when available, falls back to first populated phone
+v1.72.0 - Double-check items now sorted by order they appear in email; Adjust Date button correctly positioned
 v1.71.0 - Email modal: Adjust date chip opens date picker; Date confirm modal: interactive clock button for time adjustment
 v1.70.0 - Email draft silently regenerates when follow-up date changes (calendar picker, clock, date confirm modal)
 v1.69.0 - vCard URL QR preview shows "Virtual Contact Card" instead of the raw URL
@@ -1962,17 +1963,22 @@ function initSmsPhoneChips() {
   const row = document.getElementById('sms-phone-row');
   const chipsEl = document.getElementById('sms-phone-chips');
   if (!row || !chipsEl) return;
+
+  // Default to cell number if available, otherwise first populated phone
+  const cellIdx = phones.findIndex(p => p.number && p.type === 'cell');
+  const defaultPhone = cellIdx !== -1 ? phones[cellIdx] : populated[0];
+  selectedSmsPhoneIdx = defaultPhone ? phones.indexOf(defaultPhone) : 0;
+
   if (populated.length <= 1) {
     row.style.display = 'none';
-    selectedSmsPhoneIdx = phones.indexOf(populated[0]) || 0;
   } else {
     chipsEl.innerHTML = populated.map((p, i) => {
       const idx = phones.indexOf(p);
       const label = p.type.charAt(0).toUpperCase() + p.type.slice(1);
-      return `<button class="invite-chip${i === 0 ? ' active' : ''}" id="sms-chip-${idx}"
+      const isDefault = idx === selectedSmsPhoneIdx;
+      return `<button class="invite-chip${isDefault ? ' active' : ''}" id="sms-chip-${idx}"
         onclick="setSmsPhone(${idx})">${label}</button>`;
     }).join('');
-    selectedSmsPhoneIdx = phones.indexOf(populated[0]) || 0;
     row.style.display = 'block';
   }
 }
