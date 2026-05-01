@@ -1,6 +1,7 @@
-// card-scanner-api v1.26.0
+// card-scanner-api v1.27.0
 //
 // CHANGELOG
+// v1.27.0 - Date extractors now distinguish writing date (today) vs meeting date: relative terms resolve from today, named weekdays from meeting date
 // v1.26.0 - Added /fetch-vcf endpoint; fetches and parses vCard from URL embedded in QR code
 // v1.25.0 - SMS prefers one sentence but allows more if needed, hard limit is 160 characters
 // v1.24.0 - SMS length rule changed from "2 sentences max" to "160 characters maximum"
@@ -275,9 +276,14 @@ app.post('/extract-date', async (req, res) => {
       max_tokens: 100,
       messages: [{
         role: 'user',
-        content: `Today is ${today} (${new Date(today).toLocaleDateString('en-US', {weekday:'long'})}). The meeting took place on ${refDateLabel}. Read the notes and extract a follow-up date and time if mentioned.
+        content: `Today is ${today} (${new Date(today).toLocaleDateString('en-US', {weekday:'long'})}). The meeting with this contact took place on ${refDateLabel}. The user is writing these notes today. Read the notes and extract a follow-up date and time if mentioned.
 
-1. Follow-up DATE: Resolve relative to the meeting date. Named weekdays must be the NEXT occurrence after the meeting date. Return null if not mentioned.
+1. Follow-up DATE — use these rules:
+   - Relative terms ("tomorrow", "in 2 days", "next week", "in a few days") → resolve from TODAY (${today}), because the user is writing today, not on the meeting date
+   - Named weekdays ("Wednesday", "next Tuesday") → resolve to the NEXT UPCOMING occurrence AFTER the meeting date (${refDateLabel}), never a past date
+   - Specific dates ("March 15th", "May 7") → resolve as written
+   - Return null if no date is mentioned
+
 2. Follow-up TIME: Infer from context ("coffee"→"10:00", "lunch"→"12:00", "afternoon"→"14:00", "drinks"/"happy hour"→"18:00", "dinner"→"19:00", "morning"→"09:00", specific time→that time). Return null if unclear.
 
 Reply ONLY with raw JSON: {"followUpDate": "YYYY-MM-DD" or null, "followUpTime": "HH:MM" or null}
@@ -379,12 +385,13 @@ Instructions:
         max_tokens: 100,
         messages: [{
           role: 'user',
-          content: `Today is ${today} (${new Date(today).toLocaleDateString('en-US', {weekday:'long'})}). The meeting with this contact took place on ${refDateLabel}. Read the following conversation notes and extract two things:
+          content: `Today is ${today} (${new Date(today).toLocaleDateString('en-US', {weekday:'long'})}). The meeting with this contact took place on ${refDateLabel}. The user is writing these notes today. Extract a follow-up date and time if mentioned.
 
-1. Follow-up DATE: If a specific date or timeframe is mentioned, resolve it relative to the meeting date (${refDateLabel}), not today.
-   - Named weekdays (e.g. "Wednesday", "next Tuesday") MUST resolve to the NEXT UPCOMING occurrence after the meeting date — never a past date
+1. Follow-up DATE — use these rules:
+   - Relative terms ("tomorrow", "in 2 days", "next week", "in a few days") → resolve from TODAY (${today}), because the user is writing today, not on the meeting date
+   - Named weekdays ("Wednesday", "next Tuesday") → resolve to the NEXT UPCOMING occurrence AFTER the meeting date (${refDateLabel}), never a past date
    - "Next [weekday]" always means the following week's occurrence from the meeting date
-   - Relative terms like "in two weeks", "end of month", "March 15th" resolve from the meeting date
+   - Specific dates ("March 15th", "May 7") → resolve as written
    - If no date is mentioned, return null
 
 2. Follow-up TIME: Infer a sensible time based on context clues:
