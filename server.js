@@ -1,6 +1,7 @@
-// card-scanner-api v1.25.0
+// card-scanner-api v1.26.0
 //
 // CHANGELOG
+// v1.26.0 - Added /fetch-vcf endpoint; fetches and parses vCard from URL embedded in QR code
 // v1.25.0 - SMS prefers one sentence but allows more if needed, hard limit is 160 characters
 // v1.24.0 - SMS length rule changed from "2 sentences max" to "160 characters maximum"
 // v1.23.0 - Email prompt treats passed followUpDate as authoritative; model forbidden from re-deriving date from notes
@@ -210,6 +211,51 @@ Rules:
     res.json(parsed);
   } catch (err) {
     console.error('Error:', err.status, err.message, JSON.stringify(err.error));
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Fetch and parse a vCard from a URL embedded in a QR code
+app.post('/fetch-vcf', async (req, res) => {
+  const { url } = req.body;
+  if (!url) return res.status(400).json({ error: 'Missing url' });
+
+  try {
+    const response = await fetch(url, {
+      headers: { 'Accept': 'text/vcard, text/x-vcard, */*' },
+      signal: AbortSignal.timeout(8000)
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const text = await response.text();
+
+    // Must look like a vCard
+    if (!text.includes('BEGIN:VCARD')) {
+      return res.status(422).json({ error: 'URL did not return a vCard' });
+    }
+
+    // Parse vCard fields
+    const result = { name: '', title: '', company: '', email: '', phones: [], website: '' };
+    const typeMap = { cell: 'cell', mobile: 'cell', fax: 'fax', home: 'home', work: 'office', voice: 'office' };
+
+    text.split(/\r?\n/).forEach(line => {
+      if (line.startsWith('FN:')) result.name = line.slice(3).trim();
+      else if (line.startsWith('ORG:')) result.company = line.slice(4).split(';')[0].trim();
+      else if (line.startsWith('TITLE:')) result.title = line.slice(6).trim();
+      else if (line.toUpperCase().startsWith('EMAIL')) result.email = line.split(':').slice(1).join(':').trim();
+      else if (line.toUpperCase().startsWith('TEL')) {
+        const number = line.split(':').slice(1).join(':').trim();
+        const typePart = (line.match(/TYPE=([^:;]+)/i) || [])[1] || '';
+        const tl = typePart.toLowerCase();
+        let type = 'office';
+        for (const [k, v] of Object.entries(typeMap)) { if (tl.includes(k)) { type = v; break; } }
+        if (number) result.phones.push({ type, number });
+      }
+      else if (line.toUpperCase().startsWith('URL')) result.website = line.split(':').slice(1).join(':').trim();
+    });
+
+    res.json(result);
+  } catch (err) {
+    console.error('fetch-vcf error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
