@@ -1,6 +1,7 @@
-<!-- card-scanner v1.77.0 -->
+<!-- card-scanner v1.78.0 -->
 <!--
 CHANGELOG
+v1.78.0 - Double-check box capped at 80px with scroll; email draft given more vertical space
 v1.77.0 - Fixed broken folder SVG in Browse button (path was clipped during manual entry edit)
 v1.76.0 - Manual contact entry option added to upload screen for contacts without a card
 v1.75.0 - Clock fixed: 12 at top, correct positions for all hours, hand aligns with selected number
@@ -513,7 +514,7 @@ v1.1.0  - Version tracking and AI disclaimer added
     <div class="modal-title">✉️ Suggested Follow-up</div>
     <div class="modal-subtitle">Generated from your conversation notes</div>
     <div class="email-draft" id="email-draft-content"></div>
-    <div id="email-flags" style="display:none; background:#2a2018; border:1px solid #5a4020; border-radius:var(--radius-sm); padding:11px 13px; font-size:13px; color:#d4a96a; line-height:1.6; margin-top:4px;">
+    <div id="email-flags" style="display:none; background:#2a2018; border:1px solid #5a4020; border-radius:var(--radius-sm); padding:11px 13px; font-size:13px; color:#d4a96a; line-height:1.6; margin-top:4px; max-height:80px; overflow-y:auto;">
       <div style="font-weight:600; margin-bottom:5px;">Double-check these:</div>
       <ul id="email-flags-list" style="padding-left:16px; margin:0;"></ul>
     </div>
