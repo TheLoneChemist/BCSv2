@@ -1,6 +1,7 @@
-<!-- card-scanner v1.76.0 -->
+<!-- card-scanner v1.77.0 -->
 <!--
 CHANGELOG
+v1.77.0 - Fixed broken folder SVG in Browse button (path was clipped during manual entry edit)
 v1.76.0 - Manual contact entry option added to upload screen for contacts without a card
 v1.75.0 - Clock fixed: 12 at top, correct positions for all hours, hand aligns with selected number
 v1.74.0 - Fixed clock hour selection off-by-one: corrected angle normalization and hand position formula
@@ -440,7 +441,7 @@ v1.1.0  - Version tracking and AI disclaimer added
   <div style="display:flex;gap:10px;margin-top:6px;width:100%;">
     <button class="action-btn" style="flex:1;" onclick="document.getElementById('file-camera').click()">📷 Take photo</button>
     <button class="action-btn" style="flex:1;" onclick="document.getElementById('file-library').click()">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:5px;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>Browse
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:5px;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>Browse
     </button>
   </div>
   <button class="action-btn" style="width:100%;margin-top:4px;color:var(--muted);border-style:dashed;" onclick="openManualEntry()">Enter contact manually</button>
