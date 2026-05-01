@@ -1,6 +1,7 @@
-// card-scanner-api v1.29.0
+// card-scanner-api v1.30.0
 //
 // CHANGELOG
+// v1.30.0 - Hallucination check prompt rewritten for more intuitive, actionable descriptions (e.g. "Notes say lunch but email says coffee")
 // v1.29.0 - Named weekdays now resolve from today (not meeting date) in all date extractors
 // v1.28.0 - Email prompt forbids relative date words; infers sensible meal time hints; confirmed dates use definitive language
 // v1.27.0 - Date extractors now distinguish writing date (today) vs meeting date: relative terms resolve from today, named weekdays from meeting date
@@ -445,7 +446,7 @@ ${notes}`
         max_tokens: 300,
         messages: [{
           role: 'user',
-          content: `Compare this email draft against the conversation notes. Find specific claims in the email that cannot be reasonably inferred from the notes.
+          content: `You are a careful fact-checker. Compare this email draft against the user's conversation notes and find any specific claims in the email that are NOT supported by the notes.
 
 Conversation notes:
 ${notes}
@@ -454,18 +455,23 @@ Email draft:
 ${emailText}
 
 Do NOT flag:
-- Generic pleasantries or sign-offs
-- Reasonable social inferences ("looking forward to connecting")
-- The contact's name, title, or company
+- Generic pleasantries or sign-offs ("great meeting you", "hope you're well", "Best,")
+- Reasonable social inferences ("looking forward to connecting", "excited to work together")
+- The contact's name, title, or company (from their card, not notes)
 - The follow-up date or time
-- Anything that is a natural extension of what the notes say
+- Anything that is a natural, logical extension of what the notes say
 
-For each issue found, return:
-- "description": a short plain-English description (under 10 words)
-- "phrase": the EXACT verbatim phrase from the email (2-8 words) to highlight
+DO flag:
+- Specific topics, products, services, or agreements mentioned in the email that don't appear in the notes
+- Claims about what was promised, agreed, or decided that aren't in the notes
+- Details that contradict the notes
+
+For each issue, return:
+- "description": explain what's wrong in plain English, written as a helpful tip (e.g. "Email mentions a proposal — not in your notes" or "Notes say lunch but email says coffee")
+- "phrase": copy the EXACT words from the email to highlight (2-8 words, verbatim)
 
 Reply ONLY with raw JSON: {"issues": [{"description": "...", "phrase": "..."}]}
-If nothing suspicious, return: {"issues": []}
+If nothing is suspicious, return: {"issues": []}
 No markdown, no explanation.`
         }]
       });
