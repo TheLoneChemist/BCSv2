@@ -1,6 +1,7 @@
-<!-- card-scanner v1.74.0 -->
+<!-- card-scanner v1.75.0 -->
 <!--
 CHANGELOG
+v1.75.0 - Clock fixed: 12 at top, correct positions for all hours, hand aligns with selected number
 v1.74.0 - Fixed clock hour selection off-by-one: corrected angle normalization and hand position formula
 v1.73.0 - SMS defaults to cell phone number when available, falls back to first populated phone
 v1.72.0 - Double-check items now sorted by order they appear in email; Adjust Date button correctly positioned
@@ -1543,8 +1544,8 @@ function clockCanvasClick(e) {
   const deg = norm * 180 / Math.PI;
 
   if (clockMode === 'hour') {
-    const idx = Math.round(deg / 30) % 12; // 0=val1, 9=val10, 11=val12
-    clockHour = idx + 1;
+    const idx = Math.round(deg / 30) % 12; // 0=12 o'clock, 1=1 o'clock, etc.
+    clockHour = idx === 0 ? 12 : idx;
     clockMode = 'minute';
   } else {
     clockMinute = Math.round(deg / 6) % 60;
@@ -1589,11 +1590,13 @@ function renderClock() {
   const selected = clockMode === 'hour' ? clockHour : clockMinute;
 
   items.forEach((val, i) => {
+    // For hours: put 12 at top (i=0), then 1,2...11
+    const drawVal = clockMode === 'hour' ? (i === 0 ? 12 : i) : val;
     const ang = (i / 12) * Math.PI * 2 - Math.PI / 2;
     const nr = r - 22;
     const nx = cx + Math.cos(ang) * nr;
     const ny = cy + Math.sin(ang) * nr;
-    const isSel = val === selected;
+    const isSel = drawVal === selected;
     if (isSel) {
       ctx.beginPath();
       ctx.arc(nx, ny, 14, 0, Math.PI * 2);
@@ -1604,11 +1607,11 @@ function renderClock() {
     ctx.fillStyle = isSel ? '#F1F1F5' : textCol;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(clockMode === 'hour' ? val : String(val).padStart(2,'0'), nx, ny);
+    ctx.fillText(clockMode === 'hour' ? drawVal : String(val).padStart(2,'0'), nx, ny);
   });
 
   const handAng = clockMode === 'hour'
-    ? ((clockHour - 1) / 12) * Math.PI * 2 - Math.PI / 2
+    ? ((clockHour % 12) / 12) * Math.PI * 2 - Math.PI / 2  // 12→0°(top), 1→30°, etc.
     : (clockMinute / 60) * Math.PI * 2 - Math.PI / 2;
   ctx.beginPath();
   ctx.moveTo(cx, cy);
