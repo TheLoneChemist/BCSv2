@@ -1,6 +1,7 @@
-<!-- card-scanner v1.71.0 -->
+<!-- card-scanner v1.72.0 -->
 <!--
 CHANGELOG
+v1.72.0 - Double-check items now sorted by order they appear in email; Adjust Date button already correctly positioned beside correction textarea
 v1.71.0 - Email modal: Adjust date chip opens date picker; Date confirm modal: interactive clock button for time adjustment
 v1.70.0 - Email draft silently regenerates when follow-up date changes (calendar picker, clock, date confirm modal)
 v1.69.0 - vCard URL QR preview shows "Virtual Contact Card" instead of the raw URL
@@ -513,8 +514,8 @@ v1.1.0  - Version tracking and AI disclaimer added
     <div id="mailto-truncate-notice" style="display:none;font-size:12px;color:var(--muted);text-align:center;padding:2px 0;">Draft is long — your mail app may truncate it. Use "Copy" to paste the full text.</div>
     <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:2px;">
       <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">Something off? Add a correction and regenerate.</div>
-      <div style="display:flex;gap:8px;align-items:flex-start;">
-        <textarea id="email-correction-input" rows="2" style="
+      <div style="display:flex;gap:8px;align-items:stretch;">
+        <textarea id="email-correction-input" rows="3" style="
           flex:1;background:var(--surface2);border:1px solid var(--border);
           border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;
           font-size:14px;padding:10px 12px;resize:none;outline:none;
@@ -522,28 +523,35 @@ v1.1.0  - Version tracking and AI disclaimer added
         " placeholder='e.g. "We were at a conference, not a shop"'
           onfocus="this.style.borderColor='var(--accent2)'"
           onblur="this.style.borderColor='var(--border)'"></textarea>
-        <button id="regenerate-btn" onclick="regenerateEmailDraft()" title="Regenerate" style="
-          flex-shrink:0;width:38px;height:38px;margin-top:1px;
-          border-radius:var(--radius-sm);border:1px solid var(--border);
-          background:var(--surface);cursor:pointer;
-          display:flex;align-items:center;justify-content:center;
-          transition:border-color 0.15s,background 0.15s;
-        " onmouseover="this.style.borderColor='var(--accent2)';this.style.background='var(--surface2)'"
-           onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--surface)'">
-          <svg id="regen-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent2)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="1 4 1 10 7 10"/>
-            <path d="M3.51 15a9 9 0 1 0 .49-4.5"/>
-          </svg>
-        </button>
+        <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
+          <button id="regenerate-btn" onclick="regenerateEmailDraft()" title="Regenerate" style="
+            width:42px;flex:1;
+            border-radius:var(--radius-sm);border:1px solid var(--border);
+            background:var(--surface);cursor:pointer;
+            display:flex;align-items:center;justify-content:center;
+            transition:border-color 0.15s,background 0.15s;
+          " onmouseover="this.style.borderColor='var(--accent2)';this.style.background='var(--surface2)'"
+             onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--surface)'">
+            <svg id="regen-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent2)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="1 4 1 10 7 10"/>
+              <path d="M3.51 15a9 9 0 1 0 .49-4.5"/>
+            </svg>
+          </button>
+          <button onclick="openEmailDatePicker()" title="Adjust date" style="
+            width:42px;flex:1;
+            border-radius:var(--radius-sm);border:1px solid var(--border);
+            background:var(--surface);cursor:pointer;
+            display:flex;flex-direction:column;align-items:center;justify-content:center;
+            gap:1px;font-family:'DM Sans',sans-serif;font-size:10px;font-weight:600;
+            color:var(--muted);line-height:1.2;transition:border-color 0.15s,background 0.15s;
+          " onmouseover="this.style.borderColor='var(--accent2)';this.style.color='var(--accent2)';this.style.background='var(--surface2)'"
+             onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)';this.style.background='var(--surface)'">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <span>Adjust</span>
+            <span>Date</span>
+          </button>
+        </div>
       </div>
-    </div>
-    <div style="display:flex;justify-content:flex-end;margin-top:2px;">
-      <button onclick="openEmailDatePicker()" style="
-        padding:5px 12px;border-radius:20px;border:1px solid var(--border);
-        background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;
-        font-size:12px;cursor:pointer;transition:border-color 0.15s,color 0.15s;
-      " onmouseover="this.style.borderColor='var(--accent2)';this.style.color='var(--accent2)'"
-         onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">Adjust date</button>
     </div>
     <div style="display:flex;gap:8px;margin-top:4px;">
       <button onclick="openInMailApp()" style="
@@ -2280,10 +2288,21 @@ function renderEmailDraft(text, flags, phrases) {
   if (!draftEl) return;
 
   if (flags && flags.length > 0) {
-    if (flagsList) flagsList.innerHTML = flags.map(f => `<li>${f}</li>`).join('');
+    // Sort flags by the position their corresponding phrase appears in the email
+    const paired = flags.map((f, i) => ({ flag: f, phrase: (phrases || [])[i] || '' }));
+    paired.sort((a, b) => {
+      const posA = a.phrase ? text.toLowerCase().indexOf(a.phrase.toLowerCase()) : Infinity;
+      const posB = b.phrase ? text.toLowerCase().indexOf(b.phrase.toLowerCase()) : Infinity;
+      return posA - posB;
+    });
+    const sortedFlags = paired.map(p => p.flag);
+    const sortedPhrases = paired.map(p => p.phrase);
+
+    if (flagsList) flagsList.innerHTML = sortedFlags.map(f => `<li>${f}</li>`).join('');
     if (flagsEl) flagsEl.style.display = 'block';
+
     let html = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    (phrases || []).forEach(phrase => {
+    sortedPhrases.forEach(phrase => {
       if (!phrase) return;
       const escaped = phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       html = html.replace(new RegExp(`(${escaped})`, 'gi'),
