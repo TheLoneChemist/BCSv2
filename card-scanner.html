@@ -1,6 +1,8 @@
-<!-- card-scanner v1.67.0 -->
+<!-- card-scanner v1.69.0 -->
 <!--
 CHANGELOG
+v1.69.0 - vCard URL QR preview shows "Virtual Contact Card" instead of the raw URL
+v1.68.0 - Date confirm modal shows interactive mini calendar; vCard URL QR codes now fetched and parsed via /fetch-vcf
 v1.67.0 - SMS suggestion now refreshes dynamically when the follow-up reminder date or time is changed
 v1.66.0 - Fixed SMS date race condition: extractDateFromNotes now returns date directly to generateTextSuggestion instead of relying on DOM read
 v1.65.0 - SMS uses exact meeting type from notes (lunch vs coffee); date passed as full weekday string to prevent substitution
@@ -560,14 +562,30 @@ v1.1.0  - Version tracking and AI disclaimer added
 <div class="modal-overlay hidden" id="date-confirm-modal">
   <div class="modal-sheet">
     <div class="modal-title">📅 Follow-up detected</div>
-    <div class="modal-subtitle" id="date-confirm-subtitle">A date and time were mentioned in your notes</div>
-    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px;text-align:center;">
-      <div style="font-size:13px;color:var(--muted);margin-bottom:4px;">Suggested date &amp; time</div>
-      <div id="date-confirm-display" style="font-size:22px;font-family:'DM Serif Display',serif;color:var(--accent2);"></div>
-      <div id="time-confirm-display" style="font-size:15px;color:var(--text2);margin-top:4px;"></div>
+    <div class="modal-subtitle" id="date-confirm-subtitle">A date was mentioned in your notes</div>
+
+    <!-- Mini calendar -->
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <button onclick="miniCalNav(-1)" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:18px;padding:0 6px;">‹</button>
+        <div id="mini-cal-title" style="font-family:'DM Serif Display',serif;font-size:15px;color:var(--text);"></div>
+        <button onclick="miniCalNav(1)" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:18px;padding:0 6px;">›</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;">
+        <div style="font-size:10px;color:var(--muted);padding:2px 0;">Su</div>
+        <div style="font-size:10px;color:var(--muted);padding:2px 0;">Mo</div>
+        <div style="font-size:10px;color:var(--muted);padding:2px 0;">Tu</div>
+        <div style="font-size:10px;color:var(--muted);padding:2px 0;">We</div>
+        <div style="font-size:10px;color:var(--muted);padding:2px 0;">Th</div>
+        <div style="font-size:10px;color:var(--muted);padding:2px 0;">Fr</div>
+        <div style="font-size:10px;color:var(--muted);padding:2px 0;">Sa</div>
+      </div>
+      <div id="mini-cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;margin-top:2px;"></div>
     </div>
+
+    <div id="time-confirm-display" style="font-size:14px;color:var(--text2);text-align:center;margin-top:-4px;"></div>
+
     <button class="modal-btn primary" onclick="confirmFollowUpDate()">Use this date &amp; time</button>
-    <button class="modal-btn secondary" onclick="useDifferentDate()">Use a different date</button>
     <button class="modal-btn cancel" onclick="document.getElementById('date-confirm-modal').classList.add('hidden')">No thank you</button>
   </div>
 </div>
@@ -1020,13 +1038,37 @@ function setTone(val) {
   }
 }
 
-document.getElementById('modal-use-qr').addEventListener('click', () => {
+document.getElementById('modal-use-qr').addEventListener('click', async () => {
   hideModal();
   if (!pendingQRText) return;
   pendingQRScanned = true;
-  const parsed = parseQRText(pendingQRText);
-  if (parsed) { currentData = parsed; showResult(parsed); }
-  else showError('Could not extract contact info from QR code.');
+
+  // Check if QR is a URL pointing to a vCard
+  const isVcfUrl = /^https?:\/\/.+/i.test(pendingQRText) &&
+    (pendingQRText.toLowerCase().includes('.vcf') ||
+     pendingQRText.toLowerCase().includes('vcard'));
+
+  if (isVcfUrl) {
+    status.textContent = 'Fetching contact…';
+    try {
+      const res = await fetch(`${API}/fetch-vcf`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: pendingQRText })
+      });
+      if (!res.ok) throw new Error(`Server error ${res.status}`);
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      currentData = data;
+      showResult(data);
+    } catch (err) {
+      showError('Could not fetch vCard — try reading the card text instead.');
+    }
+  } else {
+    const parsed = parseQRText(pendingQRText);
+    if (parsed) { currentData = parsed; showResult(parsed); }
+    else showError('Could not extract contact info from QR code.');
+  }
   scanBtn.disabled = false;
 });
 
@@ -1063,6 +1105,8 @@ function classifyQR(text) {
     return { icon: '', label: 'vCard contact' + (name ? ` — ${name}` : '') };
   }
   if (t.startsWith('https://') || t.startsWith('http://')) {
+    const isVcf = t.toLowerCase().includes('.vcf') || t.toLowerCase().includes('vcard');
+    if (isVcf) return { icon: '', label: 'Virtual Contact Card' };
     const display = t.length > 55 ? t.slice(0, 55) + '…' : t;
     return { icon: '🔗', label: `Link — ${display}` };
   }
@@ -1690,6 +1734,70 @@ function saveField(key) {
     if (contactLabel) contactLabel.textContent = firstName || 'Contact';
   }
 }
+/* ─── Mini calendar ─────────────────────────────────── */
+let miniCalYear = null;
+let miniCalMonth = null;
+
+function renderMiniCal(year, month) {
+  miniCalYear = year;
+  miniCalMonth = month;
+
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const todayStr = today.toISOString().split('T')[0];
+  const suggestedStr = pendingFollowUpDate;
+
+  const monthNames = ['January','February','March','April','May','June',
+                      'July','August','September','October','November','December'];
+  document.getElementById('mini-cal-title').textContent = `${monthNames[month]} ${year}`;
+
+  const grid = document.getElementById('mini-cal-grid');
+  grid.innerHTML = '';
+
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  // Blank cells before first day
+  for (let i = 0; i < firstDay; i++) {
+    grid.appendChild(Object.assign(document.createElement('div'), {}));
+  }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isToday = dateStr === todayStr;
+    const isSuggested = dateStr === suggestedStr;
+
+    const cell = document.createElement('div');
+    cell.textContent = d;
+    cell.style.cssText = `
+      padding:5px 2px;border-radius:50%;font-size:13px;cursor:pointer;
+      font-family:'DM Sans',sans-serif;transition:background 0.1s;
+      ${isSuggested
+        ? `background:var(--accent);color:#F1F1F5;font-weight:600;`
+        : isToday
+          ? `color:var(--muted);font-size:11px;`
+          : `color:var(--text);`}
+    `;
+    cell.addEventListener('click', () => {
+      pendingFollowUpDate = dateStr;
+      renderMiniCal(year, month);
+    });
+    if (!isSuggested) {
+      cell.addEventListener('mouseover', () => { if(dateStr !== suggestedStr) cell.style.background = 'var(--border)'; });
+      cell.addEventListener('mouseout', () => { if(dateStr !== suggestedStr) cell.style.background = ''; });
+    }
+    grid.appendChild(cell);
+  }
+}
+
+function miniCalNav(dir) {
+  let m = miniCalMonth + dir;
+  let y = miniCalYear;
+  if (m > 11) { m = 0; y++; }
+  if (m < 0) { m = 11; y--; }
+  renderMiniCal(y, m);
+}
+
 /* ─── Polish notes ──────────────────────────────────── */
 async function polishNotes() {
   const raw = document.getElementById('notes-field').value.trim();
@@ -1980,19 +2088,20 @@ async function generateEmailDraft() {
     if (data.followUpDate) {
       pendingFollowUpDate = data.followUpDate;
       pendingFollowUpTime = data.followUpTime || null;
-      const formatted = new Date(data.followUpDate + 'T12:00:00')
-        .toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-      document.getElementById('date-confirm-display').textContent = formatted;
 
-      // Format time for display
+      // Render mini calendar on the suggested date's month
+      const [y, m] = data.followUpDate.split('-').map(Number);
+      renderMiniCal(y, m - 1);
+
+      // Show time if detected
       const timeDisplay = document.getElementById('time-confirm-display');
       if (data.followUpTime) {
-        const [h, m] = data.followUpTime.split(':').map(Number);
-        const ampm = h >= 12 ? 'PM' : 'AM';
-        const h12 = h % 12 || 12;
-        timeDisplay.textContent = `${h12}:${String(m).padStart(2,'0')} ${ampm}`;
+        const [h24, min] = data.followUpTime.split(':').map(Number);
+        const ampm = h24 >= 12 ? 'PM' : 'AM';
+        const h12 = h24 % 12 || 12;
+        timeDisplay.textContent = `Suggested time: ${h12}:${String(min).padStart(2,'0')} ${ampm}`;
         document.getElementById('date-confirm-subtitle').textContent =
-          'A date and time were suggested in your notes. Does this look right?';
+          'A date and time were mentioned in your notes. Does this look right?';
       } else {
         timeDisplay.textContent = '';
         document.getElementById('date-confirm-subtitle').textContent =
