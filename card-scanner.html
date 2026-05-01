@@ -1,6 +1,7 @@
-<!-- card-scanner v1.69.0 -->
+<!-- card-scanner v1.70.0 -->
 <!--
 CHANGELOG
+v1.70.0 - Email draft silently regenerates when follow-up date changes (calendar picker, clock, date confirm modal)
 v1.69.0 - vCard URL QR preview shows "Virtual Contact Card" instead of the raw URL
 v1.68.0 - Date confirm modal shows interactive mini calendar; vCard URL QR codes now fetched and parsed via /fetch-vcf
 v1.67.0 - SMS suggestion now refreshes dynamically when the follow-up reminder date or time is changed
@@ -954,8 +955,12 @@ function refreshSmsSuggestion() {
   const d = new Date(calDate + 'T12:00:00');
   const fallbackDate = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
   const smsBody = document.getElementById('sms-body');
-  if (smsBody) smsBody.value = ''; // clear so generateTextSuggestion fills it fresh
+  if (smsBody) smsBody.value = '';
   generateTextSuggestion(notes, fallbackDate);
+  // Also silently update email draft if one exists
+  if (emailDraftText) {
+    silentlyRegenerateEmail(calDate, document.getElementById('cal-time').value || null);
+  }
 }
 
 function updateCalBtn() {
@@ -2122,21 +2127,62 @@ async function generateEmailDraft() {
 
 function confirmFollowUpDate() {
   if (pendingFollowUpDate) {
-    document.getElementById('cal-date').value = pendingFollowUpDate;
-    if (pendingFollowUpTime) {
-      document.getElementById('cal-time').value = pendingFollowUpTime;
-      const [h24, m] = pendingFollowUpTime.split(':').map(Number);
+    const confirmedDate = pendingFollowUpDate;
+    const confirmedTime = pendingFollowUpTime;
+
+    document.getElementById('cal-date').value = confirmedDate;
+    if (confirmedTime) {
+      document.getElementById('cal-time').value = confirmedTime;
+      const [h24, m] = confirmedTime.split(':').map(Number);
       const { h, ap } = from24(h24);
-      const display = fmt12(h, m, ap);
       const calBtn = document.getElementById('cal-time-btn');
-      if (calBtn) calBtn.textContent = display;
+      if (calBtn) calBtn.textContent = fmt12(h, m, ap);
     }
-    showToast('Follow-up date & time updated ✓');
+
     pendingFollowUpDate = null;
     pendingFollowUpTime = null;
+
+    showToast('Follow-up date & time updated ✓');
     refreshSmsSuggestion();
+
+    // Silently regenerate the email draft with the updated date if one already exists
+    if (emailDraftText) {
+      silentlyRegenerateEmail(confirmedDate, confirmedTime);
+    }
   }
   document.getElementById('date-confirm-modal').classList.add('hidden');
+}
+
+async function silentlyRegenerateEmail(followUpDate, followUpTime) {
+  const notes = document.getElementById('notes-field').value.trim();
+  if (!notes) return;
+
+  const draftEl = document.getElementById('email-draft-content');
+  if (draftEl) draftEl.style.opacity = '0.4';
+
+  try {
+    const res = await fetch(`${API}/generate-email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contact: currentData,
+        notes,
+        paragraphs: selectedParaCount,
+        tone: selectedTone,
+        followUpDate: followUpDate || null,
+        followUpTime: followUpTime || null,
+        meetingDate
+      })
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.email) {
+      emailDraftText = data.email;
+      renderEmailDraft(emailDraftText, data.flags || [], data.phrases || []);
+    }
+  } catch { /* silent — don't disrupt the user */ } finally {
+    if (draftEl) draftEl.style.opacity = '1';
+  }
 }
 
 function useDifferentDate() {
