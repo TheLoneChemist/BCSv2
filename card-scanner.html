@@ -1,6 +1,7 @@
-<!-- card-scanner v1.75.0 -->
+<!-- card-scanner v1.76.0 -->
 <!--
 CHANGELOG
+v1.76.0 - Manual contact entry option added to upload screen for contacts without a card
 v1.75.0 - Clock fixed: 12 at top, correct positions for all hours, hand aligns with selected number
 v1.74.0 - Fixed clock hour selection off-by-one: corrected angle normalization and hand position formula
 v1.73.0 - SMS defaults to cell phone number when available, falls back to first populated phone
@@ -439,9 +440,10 @@ v1.1.0  - Version tracking and AI disclaimer added
   <div style="display:flex;gap:10px;margin-top:6px;width:100%;">
     <button class="action-btn" style="flex:1;" onclick="document.getElementById('file-camera').click()">📷 Take photo</button>
     <button class="action-btn" style="flex:1;" onclick="document.getElementById('file-library').click()">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:5px;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>Browse
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:5px;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>Browse
     </button>
   </div>
+  <button class="action-btn" style="width:100%;margin-top:4px;color:var(--muted);border-style:dashed;" onclick="openManualEntry()">Enter contact manually</button>
   <input type="file" id="file-camera" accept="image/*" capture="environment" style="display:none">
   <input type="file" id="file-library" accept="image/*" style="display:none">
 </div>
@@ -714,6 +716,54 @@ v1.1.0  - Version tracking and AI disclaimer added
 
     <button class="modal-btn primary" onclick="applyClockTime()" style="width:100%;margin-top:8px;">Confirm</button>
     <button class="modal-btn cancel" onclick="document.getElementById('clock-modal').classList.add('hidden')">Cancel</button>
+  </div>
+</div>
+
+<!-- Manual entry modal -->
+<div class="modal-overlay hidden" id="manual-entry-modal">
+  <div class="modal-sheet">
+    <div class="modal-title">Enter contact</div>
+    <div class="modal-subtitle">Fill in what you know</div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div>
+        <div class="cal-label" style="margin-bottom:4px;">Name</div>
+        <input type="text" id="manual-name" placeholder="Full name"
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:10px 12px;outline:none;transition:border-color 0.15s;"
+          onfocus="this.style.borderColor='var(--accent2)'" onblur="this.style.borderColor='var(--border)'">
+      </div>
+      <div>
+        <div class="cal-label" style="margin-bottom:4px;">Title</div>
+        <input type="text" id="manual-title" placeholder="Job title"
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:10px 12px;outline:none;transition:border-color 0.15s;"
+          onfocus="this.style.borderColor='var(--accent2)'" onblur="this.style.borderColor='var(--border)'">
+      </div>
+      <div>
+        <div class="cal-label" style="margin-bottom:4px;">Company</div>
+        <input type="text" id="manual-company" placeholder="Company or organization"
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:10px 12px;outline:none;transition:border-color 0.15s;"
+          onfocus="this.style.borderColor='var(--accent2)'" onblur="this.style.borderColor='var(--border)'">
+      </div>
+      <div>
+        <div class="cal-label" style="margin-bottom:4px;">Phone</div>
+        <input type="tel" id="manual-phone" placeholder="Phone number"
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:10px 12px;outline:none;transition:border-color 0.15s;"
+          onfocus="this.style.borderColor='var(--accent2)'" onblur="this.style.borderColor='var(--border)'">
+      </div>
+      <div>
+        <div class="cal-label" style="margin-bottom:4px;">Email</div>
+        <input type="email" id="manual-email" placeholder="Email address"
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:10px 12px;outline:none;transition:border-color 0.15s;"
+          onfocus="this.style.borderColor='var(--accent2)'" onblur="this.style.borderColor='var(--border)'">
+      </div>
+      <div>
+        <div class="cal-label" style="margin-bottom:4px;">Website</div>
+        <input type="url" id="manual-website" placeholder="www.example.com"
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:10px 12px;outline:none;transition:border-color 0.15s;"
+          onfocus="this.style.borderColor='var(--accent2)'" onblur="this.style.borderColor='var(--border)'">
+      </div>
+    </div>
+    <button class="modal-btn primary" onclick="submitManualEntry()" style="margin-top:4px;">Continue</button>
+    <button class="modal-btn cancel" onclick="document.getElementById('manual-entry-modal').classList.add('hidden')">Cancel</button>
   </div>
 </div>
 
@@ -1883,6 +1933,40 @@ function usePolishedNotes() {
   showToast('Notes updated ✓');
 }
 
+/* ─── Manual entry ──────────────────────────────────── */
+function openManualEntry() {
+  // Clear previous values
+  ['name','title','company','phone','email','website'].forEach(f => {
+    document.getElementById(`manual-${f}`).value = '';
+  });
+  document.getElementById('manual-entry-modal').classList.remove('hidden');
+  setTimeout(() => document.getElementById('manual-name').focus(), 100);
+}
+
+function submitManualEntry() {
+  const name    = document.getElementById('manual-name').value.trim();
+  const title   = document.getElementById('manual-title').value.trim();
+  const company = document.getElementById('manual-company').value.trim();
+  const phone   = document.getElementById('manual-phone').value.trim();
+  const email   = document.getElementById('manual-email').value.trim();
+  const website = document.getElementById('manual-website').value.trim();
+
+  if (!name && !phone && !email) {
+    showToast('Please enter at least a name, phone, or email');
+    return;
+  }
+
+  const phones = phone ? [{ type: 'cell', number: formatPhone(phone) }] : [];
+  const data = { name, title, company, email, phones, website };
+
+  document.getElementById('manual-entry-modal').classList.add('hidden');
+  uploadArea.style.display = 'none';
+  document.getElementById('meeting-date-row').style.display = 'block';
+  setMeetingDate('today');
+  currentData = data;
+  showResult(data);
+}
+
 /* ─── SMS text message ─────────────────────────────── */
 let textSuggestionTimer = null;
 
@@ -2464,6 +2548,10 @@ function reset() {
   meetingDate = new Date().toISOString().split('T')[0];
   document.getElementById('meeting-date-row').style.display = 'none';
   setMeetingDate('today');
+  ['name','title','company','phone','email','website'].forEach(f => {
+    const el = document.getElementById(`manual-${f}`);
+    if (el) el.value = '';
+  });
   document.getElementById('file-camera').value = '';
   document.getElementById('file-library').value = '';
   document.getElementById('notes-field').value = '';
