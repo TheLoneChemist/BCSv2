@@ -1,4 +1,85 @@
-<!-- card-scanner v1.21.0 -->
+<!-- card-scanner v1.78.0 -->
+<!--
+CHANGELOG
+v1.78.0 - Double-check box capped at 80px with scroll; email draft given more vertical space
+v1.77.0 - Fixed broken folder SVG in Browse button (path was clipped during manual entry edit)
+v1.76.0 - Manual contact entry option added to upload screen for contacts without a card
+v1.75.0 - Clock fixed: 12 at top, correct positions for all hours, hand aligns with selected number
+v1.74.0 - Fixed clock hour selection off-by-one: corrected angle normalization and hand position formula
+v1.73.0 - SMS defaults to cell phone number when available, falls back to first populated phone
+v1.72.0 - Double-check items now sorted by order they appear in email; Adjust Date button correctly positioned
+v1.71.0 - Email modal: Adjust date chip opens date picker; Date confirm modal: interactive clock button for time adjustment
+v1.70.0 - Email draft silently regenerates when follow-up date changes (calendar picker, clock, date confirm modal)
+v1.69.0 - vCard URL QR preview shows "Virtual Contact Card" instead of the raw URL
+v1.68.0 - Date confirm modal shows interactive mini calendar; vCard URL QR codes now fetched and parsed via /fetch-vcf
+v1.67.0 - SMS suggestion now refreshes dynamically when the follow-up reminder date or time is changed
+v1.66.0 - Fixed SMS date race condition: extractDateFromNotes now returns date directly to generateTextSuggestion instead of relying on DOM read
+v1.65.0 - SMS uses exact meeting type from notes (lunch vs coffee); date passed as full weekday string to prevent substitution
+v1.64.0 - Subject line changed to "Name follow-up" format; SMS now waits for date extraction before generating so it uses the correct date
+v1.63.0 - Hallucination highlights preserved after regeneration; shared renderEmailDraft function
+v1.62.0 - Regenerate button moved to right of correction textarea; replaced with spinning arrow icon
+v1.61.0 - Calendar and SMS dates update dynamically as notes are typed; em dash removed from subject line; Regenerate button made compact
+v1.60.0 - Meeting date selector added above Scan card button (Yesterday / Today / Other)
+v1.59.0 - Removed date and time chips from follow-up text message section
+v1.58.0 - Email modal: Open in mail app and Copy draft condensed to one compact row
+v1.57.0 - Both description list and inline phrase highlights shown together
+v1.56.0 - Flagged phrases highlighted in soft amber directly in the email draft
+v1.55.0 - Email modal shows hallucination flags: items in the draft not found in the notes
+v1.54.0 - Fixed syntax error: copyEmailDraft function declaration was accidentally removed
+v1.53.0 - Email modal: correction field + Regenerate button so user can fix AI assumptions
+v1.52.0 - SMS suggestion uses reminder date as fallback when notes have no date
+v1.51.0 - Polish notes chip and modal added with editable preview before committing
+v1.50.0 - SMS: no emojis, up to 2 sentences, follow-up date included; date/time row hidden unless date detected
+v1.49.0 - Include notes in reminder label gets question mark
+v1.48.0 - Conversation notes placeholder simplified
+v1.47.0 - Section order restructured: reminder → text message → email; SMS section added
+v1.46.0 - Include notes in reminder toggle added (default: on)
+v1.45.0 - Contact toggle defaults to email (or first phone) when switched on
+v1.44.0 - Back button text simplified to arrow + Back
+v1.43.0 - Right-side-up reminder added below subtitle
+v1.42.0 - Card alignment overlay fully removed
+v1.41.0 - Disclaimer updated to warn against uploading sensitive data
+v1.40.0 - Conversation notes placeholder finalized
+v1.39.0 - Back button on result card to re-open QR modal if wrong option chosen
+v1.38.0 - Open in mail app button added to email modal using mailto: URI
+v1.37.0 - Conversation notes placeholder updated with date/calendar hint
+v1.36.0 - Card alignment overlay added (Option D: rect + crosshair) then removed
+v1.35.0 - Invite chips: all on one row; only populated phone types shown
+v1.34.0 - Edit chips reverted to text "Edit" (cleaner/more professional)
+v1.33.0 - vCard and Wi-Fi QR types use no emoji; phone uses 📱
+v1.32.0 - QR content preview badge in modal; Edit chips use pen emoji
+v1.31.0 - phones[] array replaces single phone field; typed TEL lines in vCard
+v1.30.0 - Follow-up date and time included in generated email body
+v1.29.0 - Native time input replaced with custom clock UI (canvas-based)
+v1.28.0 - Use a different date opens a date/time picker modal instead of scrolling
+v1.27.0 - Time inference from context (coffee, dinner, etc.); time shown in confirm modal
+v1.26.0 - Use a different date chip added; No thank you replaces Keep current date
+v1.25.0 - Date confirmation modal before applying AI-detected follow-up date
+v1.24.0 - Follow-up date/time passed to email prompt; included naturally in generated email
+v1.23.0 - Phone number auto-formats on save and on initial render (US + international)
+v1.22.0 - Editable fields with Edit chips; blank inputs for missing name/email/phone
+v1.21.0 - Browse button uses folder SVG icon instead of emoji
+v1.20.0 - Card thumbnail embedded in QR modal instead of showing through overlay
+v1.19.0 - Retake photo / Browse buttons added after image selection
+v1.18.0 - QR modal overlay opacity reduced so card shows through
+v1.17.0 - Card image stays visible after QR scan result
+v1.16.0 - Invite redesigned: two toggle rows (contact + other) with independent chip/input
+v1.15.0 - Invite UI rebuilt: No invite button, labeled contact chips, team member toggle
+v1.14.0 - Vertical separators between invite chip groups
+v1.13.0 - Replaced Other chip with Team member; multi-select invite chips
+v1.12.0 - Team member chip added to invite; Other input field
+v1.11.0 - Generate email button matches primary button style
+v1.10.0 - Invite chips reordered; cal button text updates based on invite selection
+v1.9.0  - Calendar invite label dynamic with contact name; No invite default
+v1.8.0  - Notes textarea taller; Save & connect header added
+v1.7.0  - Notes moved above action buttons; Copy JSON removed
+v1.6.0  - LinkedIn button styled with official logo and teal gradient
+v1.5.0  - Conversation notes split into own section; follow-up email gets separate header
+v1.4.0  - Background changed to Twilight Grape #2D1B4E
+v1.3.0  - Background changed to Purple Reign #321A55
+v1.2.0  - Dark coffee color scheme
+v1.1.0  - Version tracking and AI disclaimer added
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -72,10 +153,14 @@
   .upload-label { font-size: 17px; font-weight: 500; text-align: center; }
   .upload-hint { font-size: 14px; color: var(--muted); text-align: center; }
 
-  .preview-img {
-    width: 100%; max-width: 440px; border-radius: var(--radius);
+  /* Preview overlay container */
+  .preview-wrap {
+    width: 100%; max-width: 440px; display: none; position: relative;
+  }
+  .preview-wrap img {
+    width: 100%; border-radius: var(--radius);
     max-height: 240px; object-fit: contain;
-    border: 1px solid var(--border); background: var(--surface); display: none;
+    border: 1px solid var(--border); background: var(--surface); display: block;
   }
   .scan-btn {
     width: 100%; max-width: 440px; padding: 17px;
@@ -155,8 +240,36 @@
   }
   .field-row:last-child { border-bottom: none; }
   .field-label { color: var(--muted); flex-shrink: 0; margin-right: 12px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; }
-  .field-value { color: var(--text); text-align: right; word-break: break-all; }
+  .field-value { color: var(--text); text-align: right; word-break: break-all; flex: 1; }
   .field-value a { color: var(--accent2); text-decoration: none; }
+
+  .edit-chip {
+    flex-shrink: 0; margin-left: 8px;
+    padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 500;
+    border: 1px solid var(--border2); background: transparent;
+    color: var(--muted); cursor: pointer; font-family: 'DM Sans', sans-serif;
+    transition: all 0.15s;
+  }
+  .edit-chip:hover { border-color: var(--accent2); color: var(--accent2); }
+
+  .field-input {
+    flex: 1; background: var(--surface2); border: 1px solid var(--accent);
+    border-radius: var(--radius-sm); color: var(--text);
+    font-family: 'DM Sans', sans-serif; font-size: 14px;
+    padding: 6px 10px; outline: none; text-align: right;
+    transition: border-color 0.15s; min-width: 0;
+  }
+  .field-input:focus { border-color: var(--accent2); }
+  .field-input::placeholder { color: var(--muted); font-size: 13px; }
+
+  .save-chip {
+    flex-shrink: 0; margin-left: 6px;
+    padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
+    border: 1px solid var(--accent); background: var(--accent);
+    color: #F1F1F5; cursor: pointer; font-family: 'DM Sans', sans-serif;
+    transition: background 0.15s;
+  }
+  .save-chip:hover { background: var(--accent2); border-color: var(--accent2); color: #0C0C12; }
 
   .action-row { display: flex; gap: 10px; margin-top: 16px; }
   .action-btn {
@@ -258,6 +371,13 @@
     white-space: pre-wrap; max-height: 280px; overflow-y: auto;
     margin-top: 6px;
   }
+  .email-flag-highlight {
+    background: rgba(210, 140, 40, 0.22);
+    border-bottom: 1.5px solid rgba(210, 140, 40, 0.6);
+    border-radius: 2px;
+    color: var(--text);
+    cursor: help;
+  }
   .generating-badge {
     display: inline-flex; align-items: center; gap: 6px;
     font-size: 13px; color: var(--accent2); padding: 4px 0;
@@ -307,6 +427,7 @@
 
 <h1>Card Scanner</h1>
 <p class="subtitle">Scan a business card or QR code</p>
+<p style="font-size:13px;color:var(--muted);text-align:center;margin-top:-6px;">Make sure the card is right-side up when scanned.</p>
 
 <div class="upload-area" id="upload-area">
   <div class="upload-icon">
@@ -324,11 +445,14 @@
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:5px;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>Browse
     </button>
   </div>
+  <button class="action-btn" style="width:100%;margin-top:4px;color:var(--muted);border-style:dashed;" onclick="openManualEntry()">Enter contact manually</button>
   <input type="file" id="file-camera" accept="image/*" capture="environment" style="display:none">
   <input type="file" id="file-library" accept="image/*" style="display:none">
 </div>
 
-<img id="preview" class="preview-img" alt="Card preview">
+<div class="preview-wrap" id="preview-wrap">
+  <img id="preview" alt="Card preview">
+</div>
 <div id="retake-row" style="display:none; width:100%; max-width:440px; display:none; gap:10px; margin-top: -4px;">
   <button class="action-btn" style="flex:1;" onclick="document.getElementById('file-camera').click()">📷 Retake photo</button>
   <button class="action-btn" style="flex:1;" onclick="document.getElementById('file-library').click()">
@@ -336,6 +460,26 @@
   </button>
 </div>
 <p class="status" id="status"></p>
+
+<!-- Meeting date selector -->
+<div id="meeting-date-row" style="display:none; width:100%; max-width:440px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:12px 14px;">
+  <div style="font-size:13px; color:var(--text2); margin-bottom:8px;">When did you meet this contact?</div>
+  <div style="display:flex; gap:8px; flex-wrap:wrap;">
+    <button class="invite-chip" id="meet-yesterday" onclick="setMeetingDate('yesterday')">Yesterday</button>
+    <button class="invite-chip active" id="meet-today" onclick="setMeetingDate('today')">Today</button>
+    <button class="invite-chip" id="meet-other" onclick="setMeetingDate('other')">Other…</button>
+  </div>
+  <input type="date" id="meet-other-date" style="
+    display:none; margin-top:8px; width:100%;
+    background:var(--surface2); border:1px solid var(--border);
+    border-radius:var(--radius-sm); color:var(--text);
+    font-family:'DM Sans',sans-serif; font-size:14px;
+    padding:10px 12px; outline:none; color-scheme:dark;
+    transition:border-color 0.15s;
+  " onfocus="this.style.borderColor='var(--accent2)'" onblur="this.style.borderColor='var(--border)'"
+    onchange="meetingDate=this.value">
+</div>
+
 <button class="scan-btn" id="scan-btn">Scan card</button>
 <div class="error-msg" id="error-msg"></div>
 
@@ -347,6 +491,15 @@
       object-fit:contain; background:var(--surface2);
       border:1px solid var(--border); display:none; margin-bottom:4px;
     ">
+    <div id="qr-preview-badge" style="
+      display:none; align-items:center; gap:8px;
+      background:var(--surface2); border:1px solid var(--border);
+      border-radius:var(--radius-sm); padding:10px 13px;
+      font-size:13px; color:var(--text2); line-height:1.4;
+    ">
+      <span id="qr-preview-icon" style="font-size:18px; flex-shrink:0;"></span>
+      <span id="qr-preview-text" style="word-break:break-all;"></span>
+    </div>
     <div class="modal-title">QR Code Detected</div>
     <div class="modal-subtitle">How would you like to scan this card?</div>
     <button class="modal-btn primary" id="modal-use-qr">Scan QR code</button>
@@ -361,13 +514,275 @@
     <div class="modal-title">✉️ Suggested Follow-up</div>
     <div class="modal-subtitle">Generated from your conversation notes</div>
     <div class="email-draft" id="email-draft-content"></div>
-    <button class="modal-btn primary" onclick="copyEmailDraft()">Copy email draft</button>
-    <button class="modal-btn cancel" onclick="document.getElementById('email-modal').classList.add('hidden')">Close</button>
+    <div id="email-flags" style="display:none; background:#2a2018; border:1px solid #5a4020; border-radius:var(--radius-sm); padding:11px 13px; font-size:13px; color:#d4a96a; line-height:1.6; margin-top:4px; max-height:80px; overflow-y:auto;">
+      <div style="font-weight:600; margin-bottom:5px;">Double-check these:</div>
+      <ul id="email-flags-list" style="padding-left:16px; margin:0;"></ul>
+    </div>
+    <div id="mailto-truncate-notice" style="display:none;font-size:12px;color:var(--muted);text-align:center;padding:2px 0;">Draft is long — your mail app may truncate it. Use "Copy" to paste the full text.</div>
+    <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:2px;">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">Something off? Add a correction and regenerate.</div>
+      <div style="display:flex;gap:8px;align-items:stretch;">
+        <textarea id="email-correction-input" rows="3" style="
+          flex:1;background:var(--surface2);border:1px solid var(--border);
+          border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;
+          font-size:14px;padding:10px 12px;resize:none;outline:none;
+          transition:border-color 0.15s;line-height:1.5;
+        " placeholder='e.g. "We were at a conference, not a shop"'
+          onfocus="this.style.borderColor='var(--accent2)'"
+          onblur="this.style.borderColor='var(--border)'"></textarea>
+        <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
+          <button id="regenerate-btn" onclick="regenerateEmailDraft()" title="Regenerate" style="
+            width:42px;flex:1;
+            border-radius:var(--radius-sm);border:1px solid var(--border);
+            background:var(--surface);cursor:pointer;
+            display:flex;align-items:center;justify-content:center;
+            transition:border-color 0.15s,background 0.15s;
+          " onmouseover="this.style.borderColor='var(--accent2)';this.style.background='var(--surface2)'"
+             onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--surface)'">
+            <svg id="regen-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent2)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="1 4 1 10 7 10"/>
+              <path d="M3.51 15a9 9 0 1 0 .49-4.5"/>
+            </svg>
+          </button>
+          <button onclick="openEmailDatePicker()" title="Adjust date" style="
+            width:42px;flex:1;
+            border-radius:var(--radius-sm);border:1px solid var(--border);
+            background:var(--surface);cursor:pointer;
+            display:flex;flex-direction:column;align-items:center;justify-content:center;
+            gap:1px;font-family:'DM Sans',sans-serif;font-size:10px;font-weight:600;
+            color:var(--muted);line-height:1.2;transition:border-color 0.15s,background 0.15s;
+          " onmouseover="this.style.borderColor='var(--accent2)';this.style.color='var(--accent2)';this.style.background='var(--surface2)'"
+             onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)';this.style.background='var(--surface)'">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <span>Adjust</span>
+            <span>Date</span>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:4px;">
+      <button onclick="openInMailApp()" style="
+        flex:1;padding:10px 8px;border-radius:var(--radius-sm);border:none;
+        background:var(--accent);color:#F1F1F5;font-family:'DM Sans',sans-serif;
+        font-size:13px;font-weight:600;cursor:pointer;transition:background 0.15s;
+      " onmouseover="this.style.background='var(--accent2)';this.style.color='#0C0C12'"
+         onmouseout="this.style.background='var(--accent)';this.style.color='#F1F1F5'">Open in mail app</button>
+      <button onclick="copyEmailDraft()" style="
+        flex:1;padding:10px 8px;border-radius:var(--radius-sm);
+        border:1px solid var(--border);background:var(--surface2);
+        color:var(--text);font-family:'DM Sans',sans-serif;
+        font-size:13px;font-weight:600;cursor:pointer;transition:background 0.15s;
+      " onmouseover="this.style.background='var(--border)'"
+         onmouseout="this.style.background='var(--surface2)'">Copy draft</button>
+    </div>
+    <button onclick="closeEmailModal()" style="
+      width:100%;padding:9px;border-radius:var(--radius-sm);border:none;
+      background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;
+      font-size:13px;cursor:pointer;margin-top:2px;
+    ">Close</button>
+  </div>
+</div>
+
+<!-- Date confirmation modal -->
+<div class="modal-overlay hidden" id="date-confirm-modal">
+  <div class="modal-sheet">
+    <div class="modal-title">📅 Follow-up detected</div>
+    <div class="modal-subtitle" id="date-confirm-subtitle">A date was mentioned in your notes</div>
+
+    <!-- Mini calendar -->
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <button onclick="miniCalNav(-1)" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:18px;padding:0 6px;">‹</button>
+        <div id="mini-cal-title" style="font-family:'DM Serif Display',serif;font-size:15px;color:var(--text);"></div>
+        <button onclick="miniCalNav(1)" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:18px;padding:0 6px;">›</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;">
+        <div style="font-size:10px;color:var(--muted);padding:2px 0;">Su</div>
+        <div style="font-size:10px;color:var(--muted);padding:2px 0;">Mo</div>
+        <div style="font-size:10px;color:var(--muted);padding:2px 0;">Tu</div>
+        <div style="font-size:10px;color:var(--muted);padding:2px 0;">We</div>
+        <div style="font-size:10px;color:var(--muted);padding:2px 0;">Th</div>
+        <div style="font-size:10px;color:var(--muted);padding:2px 0;">Fr</div>
+        <div style="font-size:10px;color:var(--muted);padding:2px 0;">Sa</div>
+      </div>
+      <div id="mini-cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;margin-top:2px;"></div>
+    </div>
+
+    <div id="time-confirm-row" style="display:none;margin-top:4px;">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:5px;text-align:center;">Suggested time</div>
+      <button id="confirm-time-btn" onclick="openClock('confirm')" style="
+        width:100%;background:var(--surface2);border:1px solid var(--border);
+        border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;
+        font-size:14px;padding:10px 12px;text-align:center;cursor:pointer;
+        transition:border-color 0.15s;
+      " onmouseover="this.style.borderColor='var(--accent2)'" onmouseout="this.style.borderColor='var(--border)'">
+        1:00 PM
+      </button>
+      <input type="hidden" id="confirm-time" value="13:00">
+    </div>
+
+    <button class="modal-btn primary" onclick="confirmFollowUpDate()">Use this date &amp; time</button>
+    <button class="modal-btn cancel" onclick="document.getElementById('date-confirm-modal').classList.add('hidden')">No thank you</button>
+  </div>
+</div>
+
+<!-- Polish notes modal -->
+<div class="modal-overlay hidden" id="polish-modal">
+  <div class="modal-sheet">
+    <div class="modal-title">Polish notes</div>
+    <div class="modal-subtitle">Review and adjust before committing</div>
+    <textarea id="polish-textarea" style="
+      width:100%; background:var(--surface2); border:1px solid var(--border);
+      border-radius:var(--radius-sm); color:var(--text);
+      font-family:'DM Sans',sans-serif; font-size:14px;
+      padding:12px; resize:vertical; min-height:140px; outline:none;
+      transition:border-color 0.15s; line-height:1.6;
+    " onfocus="this.style.borderColor='var(--accent2)'"
+       onblur="this.style.borderColor='var(--border)'"
+       placeholder="Polishing your notes…"></textarea>
+    <div id="polish-generating" class="generating-badge" style="display:none;">
+      <span class="dot-spin"></span> Polishing…
+    </div>
+    <button class="modal-btn primary" id="polish-use-btn" onclick="usePolishedNotes()">Use these notes</button>
+    <button class="modal-btn cancel" onclick="document.getElementById('polish-modal').classList.add('hidden')">Cancel</button>
+  </div>
+</div>
+
+<!-- Date picker modal -->
+<div class="modal-overlay hidden" id="date-picker-modal">  <div class="modal-sheet">
+    <div class="modal-title">📅 Choose a date &amp; time</div>
+    <div class="modal-subtitle">Set your preferred follow-up date and time</div>
+    <div style="display:flex;flex-direction:column;gap:12px;margin-top:4px;">
+      <div>
+        <div class="cal-label" style="margin-bottom:6px;">Date</div>
+        <input type="date" id="modal-cal-date" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;padding:12px;outline:none;color-scheme:dark;transition:border-color 0.15s;" onfocus="this.style.borderColor='var(--accent2)'" onblur="this.style.borderColor='var(--border)'">
+      </div>
+      <div>
+        <div class="cal-label" style="margin-bottom:6px;">Time</div>
+        <button id="modal-cal-time-btn" onclick="openClock('modal')" style="
+          width:100%;background:var(--surface2);border:1px solid var(--border);
+          border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;
+          font-size:15px;padding:12px;text-align:left;cursor:pointer;
+          transition:border-color 0.15s;
+        " onmouseover="this.style.borderColor='var(--accent2)'" onmouseout="this.style.borderColor='var(--border)'">
+          1:00 PM
+        </button>
+        <input type="hidden" id="modal-cal-time" value="13:00">
+      </div>
+    </div>
+    <button class="modal-btn primary" onclick="applyCustomDate()" style="margin-top:4px;">Set date &amp; time</button>
+    <button class="modal-btn cancel" onclick="document.getElementById('date-picker-modal').classList.add('hidden')">Cancel</button>
+  </div>
+</div>
+
+<!-- Clock picker modal -->
+<div class="modal-overlay hidden" id="clock-modal">
+  <div class="modal-sheet" style="align-items:center;">
+    <div class="modal-title" style="width:100%;text-align:center;">Set time</div>
+
+    <!-- Digital readout -->
+    <div style="display:flex;align-items:center;justify-content:center;gap:4px;margin:4px 0 12px;">
+      <div id="clock-hour-display" onclick="setClockMode('hour')" style="
+        font-family:'DM Serif Display',serif;font-size:42px;padding:8px 14px;
+        border-radius:var(--radius-sm);cursor:pointer;background:var(--accent);color:#F1F1F5;
+        min-width:72px;text-align:center;transition:background 0.15s;
+      ">1</div>
+      <div style="font-family:'DM Serif Display',serif;font-size:42px;color:var(--text2);">:</div>
+      <div id="clock-min-display" onclick="setClockMode('minute')" style="
+        font-family:'DM Serif Display',serif;font-size:42px;padding:8px 14px;
+        border-radius:var(--radius-sm);cursor:pointer;background:var(--surface2);color:var(--text);
+        min-width:72px;text-align:center;transition:background 0.15s;
+      ">00</div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-left:6px;">
+        <button id="clock-am-btn" onclick="setAmPm('AM')" style="
+          padding:6px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);
+          font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;
+          background:var(--accent);color:#F1F1F5;transition:all 0.15s;
+        ">AM</button>
+        <button id="clock-pm-btn" onclick="setAmPm('PM')" style="
+          padding:6px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);
+          font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;
+          background:var(--surface2);color:var(--text);transition:all 0.15s;
+        ">PM</button>
+      </div>
+    </div>
+
+    <!-- Clock face -->
+    <div style="position:relative;width:220px;height:220px;margin:0 auto;">
+      <canvas id="clock-canvas" width="220" height="220" onclick="clockCanvasClick(event)"
+        style="cursor:pointer;border-radius:50%;background:var(--surface2);border:1px solid var(--border);">
+      </canvas>
+    </div>
+
+    <div style="font-size:12px;color:var(--muted);margin-top:6px;text-align:center;" id="clock-mode-hint">Tap a hour</div>
+
+    <button class="modal-btn primary" onclick="applyClockTime()" style="width:100%;margin-top:8px;">Confirm</button>
+    <button class="modal-btn cancel" onclick="document.getElementById('clock-modal').classList.add('hidden')">Cancel</button>
+  </div>
+</div>
+
+<!-- Manual entry modal -->
+<div class="modal-overlay hidden" id="manual-entry-modal">
+  <div class="modal-sheet">
+    <div class="modal-title">Enter contact</div>
+    <div class="modal-subtitle">Fill in what you know</div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div>
+        <div class="cal-label" style="margin-bottom:4px;">Name</div>
+        <input type="text" id="manual-name" placeholder="Full name"
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:10px 12px;outline:none;transition:border-color 0.15s;"
+          onfocus="this.style.borderColor='var(--accent2)'" onblur="this.style.borderColor='var(--border)'">
+      </div>
+      <div>
+        <div class="cal-label" style="margin-bottom:4px;">Title</div>
+        <input type="text" id="manual-title" placeholder="Job title"
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:10px 12px;outline:none;transition:border-color 0.15s;"
+          onfocus="this.style.borderColor='var(--accent2)'" onblur="this.style.borderColor='var(--border)'">
+      </div>
+      <div>
+        <div class="cal-label" style="margin-bottom:4px;">Company</div>
+        <input type="text" id="manual-company" placeholder="Company or organization"
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:10px 12px;outline:none;transition:border-color 0.15s;"
+          onfocus="this.style.borderColor='var(--accent2)'" onblur="this.style.borderColor='var(--border)'">
+      </div>
+      <div>
+        <div class="cal-label" style="margin-bottom:4px;">Phone</div>
+        <input type="tel" id="manual-phone" placeholder="Phone number"
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:10px 12px;outline:none;transition:border-color 0.15s;"
+          onfocus="this.style.borderColor='var(--accent2)'" onblur="this.style.borderColor='var(--border)'">
+      </div>
+      <div>
+        <div class="cal-label" style="margin-bottom:4px;">Email</div>
+        <input type="email" id="manual-email" placeholder="Email address"
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:10px 12px;outline:none;transition:border-color 0.15s;"
+          onfocus="this.style.borderColor='var(--accent2)'" onblur="this.style.borderColor='var(--border)'">
+      </div>
+      <div>
+        <div class="cal-label" style="margin-bottom:4px;">Website</div>
+        <input type="url" id="manual-website" placeholder="www.example.com"
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:10px 12px;outline:none;transition:border-color 0.15s;"
+          onfocus="this.style.borderColor='var(--accent2)'" onblur="this.style.borderColor='var(--border)'">
+      </div>
+    </div>
+    <button class="modal-btn primary" onclick="submitManualEntry()" style="margin-top:4px;">Continue</button>
+    <button class="modal-btn cancel" onclick="document.getElementById('manual-entry-modal').classList.add('hidden')">Cancel</button>
   </div>
 </div>
 
 <!-- Result card -->
 <div class="result-card" id="result-card">
+  <!-- Back to QR option — shown only when QR was detected -->
+  <div id="rescan-qr-row" style="display:none; margin-bottom:12px;">
+    <button onclick="reopenQRModal()" style="
+      width:100%; padding:10px; border-radius:var(--radius-sm);
+      background:transparent; border:1px solid var(--border);
+      color:var(--muted); font-family:'DM Sans',sans-serif;
+      font-size:13px; cursor:pointer; transition:border-color 0.15s, color 0.15s;
+    " onmouseover="this.style.borderColor='var(--border2)';this.style.color='var(--text2)'"
+       onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
+      ← Back
+    </button>
+  </div>
   <div class="result-header">
     <div class="avatar" id="avatar">?</div>
     <div>
@@ -385,7 +800,10 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
     Conversation notes
   </div>
-  <textarea class="notes-field" id="notes-field" placeholder="What did you talk about? Any key takeaways, promises, or context… These notes will be saved to the contact on your phone." style="min-height: 140px;"></textarea>
+  <textarea class="notes-field" id="notes-field" placeholder="What did you talk about? Any key takeaways, promises, dates, or context… These notes will be used to generate your follow-ups, and will be saved to the contact on your phone." style="min-height: 140px;" oninput="scheduleTextSuggestion()"></textarea>
+  <div style="display:flex; justify-content:flex-end; margin-top:6px;">
+    <button class="edit-chip" id="polish-btn" onclick="polishNotes()" style="font-size:13px; padding:5px 14px;">Polish notes?</button>
+  </div>
 
   <hr class="section-sep">
   <div class="section-title" style="margin-bottom: 10px;">
@@ -411,7 +829,106 @@
     Find on LinkedIn
   </button>
 
-  <!-- Email draft -->
+  <!-- Follow-up reminder (calendar) -->
+  <hr class="section-sep">
+  <div class="section-title">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    Follow-up reminder
+  </div>
+  <div class="cal-row">
+    <div class="cal-field">
+      <div class="cal-label">Date</div>
+      <input type="date" id="cal-date" onchange="refreshSmsSuggestion()">
+    </div>
+    <div class="cal-field">
+      <div class="cal-label">Time</div>
+      <button id="cal-time-btn" onclick="openClock('cal')" style="
+        width:100%;background:var(--surface2);border:1px solid var(--border);
+        border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;
+        font-size:14px;padding:10px 12px;text-align:left;cursor:pointer;
+        transition:border-color 0.15s;
+      " onmouseover="this.style.borderColor='var(--accent2)'" onmouseout="this.style.borderColor='var(--border)'">
+        1:00 PM
+      </button>
+      <input type="hidden" id="cal-time" value="13:00">
+    </div>
+  </div>
+
+  <div style="margin-top:14px;">
+    <div class="cal-label" style="margin-bottom:12px;">Would you like to include anyone else on the reminder?</div>
+
+    <!-- Contact toggle row -->
+    <div class="toggle-row">
+      <span class="toggle-label" id="contact-toggle-label">Contact</span>
+      <label class="toggle-switch">
+        <input type="checkbox" id="contact-toggle" onchange="onContactToggle(this.checked)">
+        <span class="toggle-track"></span>
+      </label>
+    </div>
+    <div id="contact-chips-wrap" style="display:none; margin-top:8px;">
+      <div class="cal-label" style="margin-bottom:6px;">Send via</div>
+      <div class="invite-options" id="contact-send-chips">
+        <button class="invite-chip dimmed" id="chip-phone" data-invite="phone-0" onclick="toggleInvite('phone-0')">Phone</button>
+        <button class="invite-chip" id="chip-email" data-invite="email" onclick="toggleInvite('email')">E-mail</button>
+      </div>
+    </div>
+
+    <!-- Other/team member toggle row -->
+    <div class="toggle-row" style="margin-top:10px;">
+      <span class="toggle-label">Other</span>
+      <label class="toggle-switch">
+        <input type="checkbox" id="team-toggle" onchange="onTeamToggle(this.checked)">
+        <span class="toggle-track"></span>
+      </label>
+    </div>
+    <div class="team-input-wrap" id="team-input-wrap">
+      <input type="text" id="invite-other-input" placeholder="Email or phone number…"
+        style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:10px 12px;outline:none;transition:border-color 0.15s;"
+        onfocus="this.style.borderColor='var(--accent2)'"
+        onblur="this.style.borderColor='var(--border)'">
+    </div>
+  </div>
+
+  <!-- Include notes toggle -->
+  <div class="toggle-row" style="margin-top:14px;">
+    <span class="toggle-label">Include conversation notes in reminder?</span>
+    <label class="toggle-switch">
+      <input type="checkbox" id="include-notes-toggle" checked>
+      <span class="toggle-track"></span>
+    </label>
+  </div>
+
+  <button class="action-btn wide primary" id="cal-btn" onclick="createCalendarEvent()" style="margin-top:12px;">
+    📅 Add to calendar
+  </button>
+
+  <!-- Follow-up text message -->
+  <hr class="section-sep">
+  <div class="section-title">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    Follow-up text message
+  </div>
+  <div id="sms-phone-row" style="display:none; margin-bottom:10px;">
+    <div class="cal-label" style="margin-bottom:6px;">Send to</div>
+    <div class="invite-options" id="sms-phone-chips"></div>
+  </div>
+  <div style="position:relative;">
+    <textarea id="sms-body" rows="2" style="
+      width:100%;background:var(--surface2);border:1px solid var(--border);
+      border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;
+      font-size:14px;padding:10px 12px;resize:none;outline:none;
+      transition:border-color 0.15s;line-height:1.5;
+    " placeholder="Generating suggestion…"
+      oninput="const c=document.getElementById('sms-char-count');if(c)c.textContent=this.value.length+' / 160';"
+      onfocus="this.style.borderColor='var(--accent2)'"
+      onblur="this.style.borderColor='var(--border)'"></textarea>
+    <div id="sms-char-count" style="font-size:11px;color:var(--muted);text-align:right;margin-top:3px;">0 / 160</div>
+  </div>
+  <button class="action-btn wide primary" id="sms-btn" onclick="openInMessagesApp()" style="margin-top:8px;">
+    💬 Open in Messages
+  </button>
+
+  <!-- Follow-up email draft -->
   <hr class="section-sep">
   <div class="section-title">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
@@ -445,62 +962,6 @@
   </div>
 
   <button class="action-btn wide highlight" id="gen-email-btn" onclick="generateEmailDraft()" style="margin-top:10px;">Generate follow-up email</button>
-
-  <!-- Calendar / Follow-up -->
-  <hr class="section-sep">
-  <div class="section-title">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-    Follow-up reminder
-  </div>
-  <div class="cal-row">
-    <div class="cal-field">
-      <div class="cal-label">Date</div>
-      <input type="date" id="cal-date">
-    </div>
-    <div class="cal-field">
-      <div class="cal-label">Time</div>
-      <input type="time" id="cal-time" value="13:00">
-    </div>
-  </div>
-
-  <div style="margin-top:14px;">
-    <div class="cal-label" style="margin-bottom:12px;">Would you like to include anyone else on the reminder?</div>
-
-    <!-- Contact toggle row -->
-    <div class="toggle-row">
-      <span class="toggle-label" id="contact-toggle-label">Contact</span>
-      <label class="toggle-switch">
-        <input type="checkbox" id="contact-toggle" onchange="onContactToggle(this.checked)">
-        <span class="toggle-track"></span>
-      </label>
-    </div>
-    <div id="contact-chips-wrap" style="display:none; margin-top:8px;">
-      <div class="cal-label" style="margin-bottom:6px;">Send via</div>
-      <div class="invite-options">
-        <button class="invite-chip" id="chip-phone" data-invite="phone" onclick="toggleInvite('phone')">Phone</button>
-        <button class="invite-chip" id="chip-email" data-invite="email" onclick="toggleInvite('email')">E-mail</button>
-      </div>
-    </div>
-
-    <!-- Other/team member toggle row -->
-    <div class="toggle-row" style="margin-top:10px;">
-      <span class="toggle-label">Other</span>
-      <label class="toggle-switch">
-        <input type="checkbox" id="team-toggle" onchange="onTeamToggle(this.checked)">
-        <span class="toggle-track"></span>
-      </label>
-    </div>
-    <div class="team-input-wrap" id="team-input-wrap">
-      <input type="text" id="invite-other-input" placeholder="Email or phone number…"
-        style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:10px 12px;outline:none;transition:border-color 0.15s;"
-        onfocus="this.style.borderColor='var(--accent2)'"
-        onblur="this.style.borderColor='var(--border)'">
-    </div>
-  </div>
-
-  <button class="action-btn wide primary" id="cal-btn" onclick="createCalendarEvent()" style="margin-top:12px;">
-    📅 Add to calendar
-  </button>
 </div>
 
 <button class="reset-btn" id="reset-btn" onclick="reset()">Scan another card</button>
@@ -509,7 +970,7 @@
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
   </svg>
-  <span>This app uses AI to read cards and generate emails. Card scanning and email drafts are powered by <strong>Claude Haiku 4.5</strong> (Anthropic). Images are processed on-demand and not stored.</span>
+  <span>This app uses AI to read cards and generate emails. Card scanning and email drafts are powered by <strong>Claude Haiku 4.5</strong> (Anthropic). Images are processed on-demand and not stored. Do not upload images containing sensitive or confidential information.</span>
 </div>
 
 <!-- Toast -->
@@ -525,6 +986,10 @@ let selectedInvite = new Set(['none']);
 let selectedParaCount = 3;
 let selectedTone = 'professional';
 let emailDraftText = '';
+let pendingFollowUpDate = null;
+let pendingFollowUpTime = null;
+let pendingQRScanned = false;
+let meetingDate = new Date().toISOString().split('T')[0]; // defaults to today // tracks if user arrived via a QR choice
 
 const preview = document.getElementById('preview');
 const scanBtn = document.getElementById('scan-btn');
@@ -542,6 +1007,43 @@ function setDefaultDate() {
   d.setDate(d.getDate() + 1);
   const iso = d.toISOString().split('T')[0];
   document.getElementById('cal-date').value = iso;
+}
+
+function setMeetingDate(val) {
+  const otherInput = document.getElementById('meet-other-date');
+  document.querySelectorAll('#meet-yesterday, #meet-today, #meet-other').forEach(c => c.classList.remove('active'));
+
+  if (val === 'yesterday') {
+    const d = new Date(); d.setDate(d.getDate() - 1);
+    meetingDate = d.toISOString().split('T')[0];
+    document.getElementById('meet-yesterday').classList.add('active');
+    otherInput.style.display = 'none';
+  } else if (val === 'today') {
+    meetingDate = new Date().toISOString().split('T')[0];
+    document.getElementById('meet-today').classList.add('active');
+    otherInput.style.display = 'none';
+  } else {
+    document.getElementById('meet-other').classList.add('active');
+    otherInput.style.display = 'block';
+    otherInput.focus();
+    if (otherInput.value) meetingDate = otherInput.value;
+  }
+}
+
+function refreshSmsSuggestion() {
+  const notes = document.getElementById('notes-field').value.trim();
+  if (!notes || notes.length < 10) return;
+  const calDate = document.getElementById('cal-date').value;
+  if (!calDate) return;
+  const d = new Date(calDate + 'T12:00:00');
+  const fallbackDate = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  const smsBody = document.getElementById('sms-body');
+  if (smsBody) smsBody.value = '';
+  generateTextSuggestion(notes, fallbackDate);
+  // Also silently update email draft if one exists
+  if (emailDraftText) {
+    silentlyRegenerateEmail(calDate, document.getElementById('cal-time').value || null);
+  }
 }
 
 function updateCalBtn() {
@@ -574,6 +1076,17 @@ function onContactToggle(checked) {
     selectedInvite.delete('phone');
     selectedInvite.delete('email');
     document.querySelectorAll('.invite-chip').forEach(c => c.classList.remove('active'));
+  } else {
+    // Default to email if available, otherwise first populated phone
+    const hasEmail = !!(currentData && currentData.email);
+    const phones = (currentData && currentData.phones) || [];
+    const firstPhone = phones.find(p => p.number);
+    if (hasEmail) {
+      toggleInvite('email');
+    } else if (firstPhone) {
+      const idx = phones.indexOf(firstPhone);
+      toggleInvite(`phone-${idx}`);
+    }
   }
   updateCalBtn();
 }
@@ -613,17 +1126,43 @@ function setTone(val) {
   }
 }
 
-document.getElementById('modal-use-qr').addEventListener('click', () => {
+document.getElementById('modal-use-qr').addEventListener('click', async () => {
   hideModal();
   if (!pendingQRText) return;
-  const parsed = parseQRText(pendingQRText);
-  if (parsed) { currentData = parsed; showResult(parsed); }
-  else showError('Could not extract contact info from QR code.');
+  pendingQRScanned = true;
+
+  // Check if QR is a URL pointing to a vCard
+  const isVcfUrl = /^https?:\/\/.+/i.test(pendingQRText) &&
+    (pendingQRText.toLowerCase().includes('.vcf') ||
+     pendingQRText.toLowerCase().includes('vcard'));
+
+  if (isVcfUrl) {
+    status.textContent = 'Fetching contact…';
+    try {
+      const res = await fetch(`${API}/fetch-vcf`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: pendingQRText })
+      });
+      if (!res.ok) throw new Error(`Server error ${res.status}`);
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      currentData = data;
+      showResult(data);
+    } catch (err) {
+      showError('Could not fetch vCard — try reading the card text instead.');
+    }
+  } else {
+    const parsed = parseQRText(pendingQRText);
+    if (parsed) { currentData = parsed; showResult(parsed); }
+    else showError('Could not extract contact info from QR code.');
+  }
   scanBtn.disabled = false;
 });
 
 document.getElementById('modal-use-text').addEventListener('click', async () => {
   hideModal();
+  pendingQRScanned = true;
   await scanViaAPI(pendingBase64, pendingMediaType);
   scanBtn.disabled = false;
 });
@@ -634,11 +1173,60 @@ document.getElementById('modal-cancel').addEventListener('click', () => {
   scanBtn.disabled = false;
 });
 
+function reopenQRModal() {
+  // Clear current result and re-show the QR choice modal
+  currentData = null;
+  resultCard.style.display = 'none';
+  document.getElementById('rescan-qr-row').style.display = 'none';
+  document.getElementById('notes-field').value = '';
+  document.getElementById('fields').innerHTML = '';
+  showModal();
+  scanBtn.disabled = true;
+}
+
+function classifyQR(text) {
+  if (!text) return null;
+  const t = text.trim();
+  if (t.startsWith('BEGIN:VCARD')) {
+    const fnLine = t.split(/\r?\n/).find(l => l.startsWith('FN:'));
+    const name = fnLine ? fnLine.slice(3).trim() : '';
+    return { icon: '', label: 'vCard contact' + (name ? ` — ${name}` : '') };
+  }
+  if (t.startsWith('https://') || t.startsWith('http://')) {
+    const isVcf = t.toLowerCase().includes('.vcf') || t.toLowerCase().includes('vcard');
+    if (isVcf) return { icon: '', label: 'Virtual Contact Card' };
+    const display = t.length > 55 ? t.slice(0, 55) + '…' : t;
+    return { icon: '🔗', label: `Link — ${display}` };
+  }
+  if (t.startsWith('mailto:')) return { icon: '✉️', label: `Email — ${t.slice(7)}` };
+  if (t.startsWith('tel:'))    return { icon: '📱', label: `Phone — ${t.slice(4)}` };
+  if (t.toLowerCase().startsWith('smsto:') || t.toLowerCase().startsWith('sms:'))
+    return { icon: '💬', label: `SMS — ${t.split(':').slice(1).join(':')}` };
+  if (t.toUpperCase().startsWith('WIFI:')) {
+    const ssid = (t.match(/S:([^;]+)/i) || [])[1] || '';
+    return { icon: '', label: `Wi-Fi${ssid ? ` — ${ssid}` : ''}` };
+  }
+  const preview = t.length > 60 ? t.slice(0, 60) + '…' : t;
+  return { icon: '📄', label: `Text — ${preview}` };
+}
+
 function showModal() {
   const thumb = document.getElementById('qr-modal-thumb');
   if (thumb && preview.src) {
     thumb.src = preview.src;
     thumb.style.display = 'block';
+  }
+  const badge = document.getElementById('qr-preview-badge');
+  const iconEl = document.getElementById('qr-preview-icon');
+  const textEl = document.getElementById('qr-preview-text');
+  const classified = classifyQR(pendingQRText);
+  if (classified && badge && iconEl && textEl) {
+    iconEl.textContent = classified.icon;
+    iconEl.style.display = classified.icon ? 'inline' : 'none';
+    textEl.textContent = classified.label;
+    badge.style.display = 'flex';
+  } else if (badge) {
+    badge.style.display = 'none';
   }
   qrModal.classList.remove('hidden');
 }
@@ -652,9 +1240,10 @@ function handleFileSelect(file) {
     const img = new Image();
     img.onload = () => {
       preview.src = e.target.result;
-      preview.style.display = 'block';
+      document.getElementById('preview-wrap').style.display = 'block';
       uploadArea.style.display = 'none';
       document.getElementById('retake-row').style.display = 'flex';
+      document.getElementById('meeting-date-row').style.display = 'block';
       scanBtn.style.display = 'block';
       status.textContent = 'Ready to scan';
       errorMsg.style.display = 'none';
@@ -700,14 +1289,23 @@ function tryDecodeQR(canvas) {
 }
 
 function parseQRText(text) {
-  const result = { name: '', title: '', company: '', email: '', phone: '', website: '' };
+  const result = { name: '', title: '', company: '', email: '', phones: [], website: '' };
   if (text.startsWith('BEGIN:VCARD')) {
     text.split(/\r?\n/).forEach(line => {
       if (line.startsWith('FN:')) result.name = line.slice(3);
       else if (line.startsWith('ORG:')) result.company = line.slice(4);
       else if (line.startsWith('TITLE:')) result.title = line.slice(6);
       else if (line.startsWith('EMAIL')) result.email = line.split(':').slice(1).join(':');
-      else if (line.startsWith('TEL')) result.phone = line.split(':').slice(1).join(':');
+      else if (line.startsWith('TEL')) {
+        const number = line.split(':').slice(1).join(':');
+        const typePart = (line.match(/TYPE=([^:;]+)/i) || [])[1] || '';
+        const tl = typePart.toLowerCase();
+        let type = 'office';
+        if (tl.includes('cell') || tl.includes('mobile')) type = 'cell';
+        else if (tl.includes('fax')) type = 'fax';
+        else if (tl.includes('home')) type = 'home';
+        result.phones.push({ type, number });
+      }
       else if (line.startsWith('URL')) result.website = line.split(':').slice(1).join(':');
     });
     return result;
@@ -773,42 +1371,732 @@ function initials(name) {
 function showResult(d) {
   status.textContent = '';
   scanBtn.style.display = 'none';
-  preview.style.display = 'block';
+  document.getElementById('preview-wrap').style.display = 'block';
+
+  // Normalize: support legacy single `phone` string or new `phones` array
+  if (!d.phones || !Array.isArray(d.phones)) {
+    d.phones = d.phone ? [{ type: 'office', number: d.phone }] : [];
+    delete d.phone;
+  }
+  // Format each phone number
+  d.phones = d.phones.map(p => ({ ...p, number: formatPhone(p.number) }));
+
   document.getElementById('avatar').textContent = initials(d.name);
   document.getElementById('res-name').textContent = d.name || '—';
   document.getElementById('res-title').textContent = d.title || '';
   document.getElementById('res-company').textContent = d.company || '';
 
-  const fields = [];
-  if (d.email) fields.push({ label: 'Email', value: `<a href="mailto:${d.email}">${d.email}</a>` });
-  if (d.phone) fields.push({ label: 'Phone', value: `<a href="tel:${d.phone}">${d.phone}</a>` });
+  // Build field rows
+  const fieldDefs = [
+    { key: 'name',  label: 'Name',  placeholder: 'Enter name…',  linkFn: null },
+    { key: 'email', label: 'Email', placeholder: 'Enter email…', linkFn: v => `<a href="mailto:${v}">${v}</a>` },
+  ];
   if (d.website) {
-    const url = d.website.startsWith('http') ? d.website : 'https://' + d.website;
-    fields.push({ label: 'Website', value: `<a href="${url}" target="_blank">${d.website}</a>` });
+    fieldDefs.push({ key: 'website', label: 'Website', placeholder: 'Enter website…',
+      linkFn: v => { const u = v.startsWith('http') ? v : 'https://'+v; return `<a href="${u}" target="_blank">${v}</a>`; }
+    });
   }
 
-  document.getElementById('fields').innerHTML = fields.map(f =>
-    `<div class="field-row"><span class="field-label">${f.label}</span><span class="field-value">${f.value}</span></div>`
-  ).join('');
+  // Render standard fields
+  let fieldsHTML = fieldDefs.map(f => {
+    const val = (d[f.key] || '').trim();
+    const id = `field-${f.key}`;
+    if (val) {
+      const display = f.linkFn ? f.linkFn(val) : val;
+      return `<div class="field-row" id="row-${f.key}">
+        <span class="field-label">${f.label}</span>
+        <span class="field-value" id="${id}-display">${display}</span>
+        <button class="edit-chip" onclick="editField('${f.key}')">Edit</button>
+      </div>`;
+    } else {
+      return `<div class="field-row" id="row-${f.key}">
+        <span class="field-label">${f.label}</span>
+        <input class="field-input" id="${id}-input" placeholder="${f.placeholder}"
+          onkeydown="if(event.key==='Enter') saveField('${f.key}')">
+        <button class="save-chip" onclick="saveField('${f.key}')">Save</button>
+      </div>`;
+    }
+  }).join('');
 
-  // Dim contact chips if no value available
-  const phoneChip = document.getElementById('chip-phone');
-  const emailChip = document.getElementById('chip-email');
-  if (phoneChip) phoneChip.classList.toggle('dimmed', !d.phone);
-  if (emailChip) emailChip.classList.toggle('dimmed', !d.email);
+  // Render phone rows — one per entry, plus a blank "add phone" row if none
+  if (d.phones.length > 0) {
+    d.phones.forEach((p, i) => {
+      const typeLabel = p.type.charAt(0).toUpperCase() + p.type.slice(1);
+      fieldsHTML += `<div class="field-row" id="row-phone-${i}">
+        <span class="field-label">${typeLabel}</span>
+        <span class="field-value" id="field-phone-${i}-display">
+          <a href="tel:${p.number}">${p.number}</a>
+        </span>
+        <button class="edit-chip" onclick="editPhoneField(${i})">Edit</button>
+      </div>`;
+    });
+  } else {
+    fieldsHTML += `<div class="field-row" id="row-phone-0">
+      <span class="field-label">Phone</span>
+      <input class="field-input" id="field-phone-0-input" placeholder="Enter phone…"
+        onkeydown="if(event.key==='Enter') savePhoneField(0)">
+      <button class="save-chip" onclick="savePhoneField(0)">Save</button>
+    </div>`;
+  }
+
+  document.getElementById('fields').innerHTML = fieldsHTML;
+
+  // Build phone chip options for invite section
+  updatePhoneChips();
 
   // Set contact name on toggle label
   const firstName = (d.name || '').trim().split(/\s+/)[0];
   const contactLabel = document.getElementById('contact-toggle-label');
   if (contactLabel) contactLabel.textContent = firstName || 'Contact';
 
+  // Dim email chip if no email
+  const emailChip = document.getElementById('chip-email');
+  if (emailChip) emailChip.classList.toggle('dimmed', !d.email);
+
   setDefaultDate();
+  initSmsPhoneChips();
+  // Show back-to-QR button only when user arrived via QR choice
+  const rescanRow = document.getElementById('rescan-qr-row');
+  if (rescanRow) rescanRow.style.display = pendingQRScanned ? 'block' : 'none';
   resultCard.style.display = 'flex';
   resultCard.style.flexDirection = 'column';
   resetBtn.style.display = 'block';
 }
 
-/* ─── Calendar ─────────────────────────────────────── */
+/* ─── Field editing ─────────────────────────────────── */
+
+function formatPhone(raw) {
+  // Strip everything except digits and leading +
+  const hasPlus = raw.trim().startsWith('+');
+  const digits = raw.replace(/\D/g, '');
+
+  if (!digits) return raw;
+
+  // International: starts with + or >10 digits — try to detect country
+  if (hasPlus || digits.length > 10) {
+    const full = (hasPlus ? '+' : '') + digits;
+
+    // +1 — USA/Canada: +1 (###) ###-####
+    if (digits.startsWith('1') && digits.length === 11)
+      return `+1 (${digits.slice(1,4)}) ${digits.slice(4,7)}-${digits.slice(7)}`;
+
+    // +44 — UK: +44 #### ######
+    if (digits.startsWith('44') && digits.length === 12)
+      return `+44 ${digits.slice(2,6)} ${digits.slice(6)}`;
+
+    // +52 — Mexico: +52 ## #### ####
+    if (digits.startsWith('52') && digits.length === 12)
+      return `+52 ${digits.slice(2,4)} ${digits.slice(4,8)} ${digits.slice(8)}`;
+
+    // +33 — France: +33 # ## ## ## ##
+    if (digits.startsWith('33') && digits.length === 11)
+      return `+33 ${digits[2]} ${digits.slice(3,5)} ${digits.slice(5,7)} ${digits.slice(7,9)} ${digits.slice(9)}`;
+
+    // +49 — Germany: +49 ### #######
+    if (digits.startsWith('49') && digits.length >= 11)
+      return `+49 ${digits.slice(2,5)} ${digits.slice(5)}`;
+
+    // +34 — Spain: +34 ### ### ###
+    if (digits.startsWith('34') && digits.length === 11)
+      return `+34 ${digits.slice(2,5)} ${digits.slice(5,8)} ${digits.slice(8)}`;
+
+    // +39 — Italy: +39 ### ### ####
+    if (digits.startsWith('39') && digits.length === 12)
+      return `+39 ${digits.slice(2,5)} ${digits.slice(5,8)} ${digits.slice(8)}`;
+
+    // +55 — Brazil: +55 (##) #####-####
+    if (digits.startsWith('55') && digits.length === 13)
+      return `+55 (${digits.slice(2,4)}) ${digits.slice(4,9)}-${digits.slice(9)}`;
+
+    // +91 — India: +91 ##### #####
+    if (digits.startsWith('91') && digits.length === 12)
+      return `+91 ${digits.slice(2,7)} ${digits.slice(7)}`;
+
+    // +61 — Australia: +61 ### ### ###
+    if (digits.startsWith('61') && digits.length === 11)
+      return `+61 ${digits.slice(2,5)} ${digits.slice(5,8)} ${digits.slice(8)}`;
+
+    // +81 — Japan: +81 ##-####-####
+    if (digits.startsWith('81') && digits.length === 12)
+      return `+81 ${digits.slice(2,4)}-${digits.slice(4,8)}-${digits.slice(8)}`;
+
+    // +86 — China: +86 ### #### ####
+    if (digits.startsWith('86') && digits.length === 13)
+      return `+86 ${digits.slice(2,5)} ${digits.slice(5,9)} ${digits.slice(9)}`;
+
+    // Generic international fallback: +CC #... grouped as dialed
+    return hasPlus ? `+${digits}` : digits;
+  }
+
+  // 10 digits — USA/Canada domestic: (###) ###-####
+  if (digits.length === 10)
+    return `(${digits.slice(0,3)}) ${digits.slice(3,6)}-${digits.slice(6)}`;
+
+  // 7 digits — local US (no area code): ###-####
+  if (digits.length === 7)
+    return `${digits.slice(0,3)}-${digits.slice(3)}`;
+
+  // Fallback — return as-is
+  return raw;
+}
+
+/* ─── Clock picker ──────────────────────────────────── */
+let clockTargetId = 'cal';
+let clockHour = 1;
+let clockMinute = 0;
+let clockAmPm = 'PM';
+let clockMode = 'hour';
+
+function fmt12(h, m, ap) {
+  return `${h}:${String(m).padStart(2,'0')} ${ap}`;
+}
+function to24(h, ap) {
+  if (ap === 'AM') return h === 12 ? 0 : h;
+  return h === 12 ? 12 : h + 12;
+}
+function from24(h24) {
+  const ap = h24 < 12 ? 'AM' : 'PM';
+  const h = h24 % 12 === 0 ? 12 : h24 % 12;
+  return { h, ap };
+}
+
+function openClock(target) {
+  clockTargetId = target;
+  const hiddenId = target === 'cal' ? 'cal-time' : target === 'confirm' ? 'confirm-time' : 'modal-cal-time';
+  const val = document.getElementById(hiddenId).value || '13:00';
+  const [h24str, mstr] = val.split(':');
+  const { h, ap } = from24(parseInt(h24str));
+  clockHour = h;
+  clockMinute = parseInt(mstr) || 0;
+  clockAmPm = ap;
+  clockMode = 'hour';
+  document.getElementById('clock-modal').classList.remove('hidden');
+  requestAnimationFrame(renderClock);
+}
+
+function setClockMode(mode) {
+  clockMode = mode;
+  renderClock();
+}
+
+function setAmPm(ap) {
+  clockAmPm = ap;
+  renderClock();
+}
+
+function clockCanvasClick(e) {
+  const canvas = document.getElementById('clock-canvas');
+  const rect = canvas.getBoundingClientRect();
+  const cx = 110, cy = 110;
+  const x = e.clientX - rect.left - cx;
+  const y = e.clientY - rect.top - cy;
+  // Rotate so 0° is at top (12 o'clock), increasing clockwise
+  const angle = Math.atan2(y, x) + Math.PI / 2;
+  const norm = ((angle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+  const deg = norm * 180 / Math.PI;
+
+  if (clockMode === 'hour') {
+    const idx = Math.round(deg / 30) % 12; // 0=12 o'clock, 1=1 o'clock, etc.
+    clockHour = idx === 0 ? 12 : idx;
+    clockMode = 'minute';
+  } else {
+    clockMinute = Math.round(deg / 6) % 60;
+  }
+  renderClock();
+}
+
+function renderClock() {
+  const canvas = document.getElementById('clock-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const cx = 110, cy = 110, r = 90;
+  const style = getComputedStyle(document.documentElement);
+  const accent  = style.getPropertyValue('--accent').trim()  || '#5A4FCF';
+  const textCol = style.getPropertyValue('--text').trim()    || '#F1F1F5';
+  const muted   = style.getPropertyValue('--muted').trim()   || '#9FA3B0';
+  const surf2   = style.getPropertyValue('--surface2').trim()|| '#42286c';
+
+  ctx.clearRect(0, 0, 220, 220);
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fillStyle = surf2;
+  ctx.fill();
+
+  for (let i = 0; i < 60; i++) {
+    const ang = (i / 60) * Math.PI * 2 - Math.PI / 2;
+    const isMajor = i % 5 === 0;
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(ang) * (r - (isMajor ? 12 : 7)),
+               cy + Math.sin(ang) * (r - (isMajor ? 12 : 7)));
+    ctx.lineTo(cx + Math.cos(ang) * (r - 2),
+               cy + Math.sin(ang) * (r - 2));
+    ctx.strokeStyle = isMajor ? muted : muted + '66';
+    ctx.lineWidth = isMajor ? 1.5 : 0.8;
+    ctx.stroke();
+  }
+
+  const items = clockMode === 'hour'
+    ? [1,2,3,4,5,6,7,8,9,10,11,12]
+    : [0,5,10,15,20,25,30,35,40,45,50,55];
+  const selected = clockMode === 'hour' ? clockHour : clockMinute;
+
+  items.forEach((val, i) => {
+    // For hours: put 12 at top (i=0), then 1,2...11
+    const drawVal = clockMode === 'hour' ? (i === 0 ? 12 : i) : val;
+    const ang = (i / 12) * Math.PI * 2 - Math.PI / 2;
+    const nr = r - 22;
+    const nx = cx + Math.cos(ang) * nr;
+    const ny = cy + Math.sin(ang) * nr;
+    const isSel = drawVal === selected;
+    if (isSel) {
+      ctx.beginPath();
+      ctx.arc(nx, ny, 14, 0, Math.PI * 2);
+      ctx.fillStyle = accent;
+      ctx.fill();
+    }
+    ctx.font = `${isSel ? 600 : 400} 13px 'DM Sans', sans-serif`;
+    ctx.fillStyle = isSel ? '#F1F1F5' : textCol;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(clockMode === 'hour' ? drawVal : String(val).padStart(2,'0'), nx, ny);
+  });
+
+  const handAng = clockMode === 'hour'
+    ? ((clockHour % 12) / 12) * Math.PI * 2 - Math.PI / 2  // 12→0°(top), 1→30°, etc.
+    : (clockMinute / 60) * Math.PI * 2 - Math.PI / 2;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(cx + Math.cos(handAng) * (r - 28), cy + Math.sin(handAng) * (r - 28));
+  ctx.strokeStyle = accent;
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+  ctx.fillStyle = accent;
+  ctx.fill();
+
+  const hd = document.getElementById('clock-hour-display');
+  const md = document.getElementById('clock-min-display');
+  const ab = document.getElementById('clock-am-btn');
+  const pb = document.getElementById('clock-pm-btn');
+  const ht = document.getElementById('clock-mode-hint');
+  if (hd) { hd.textContent = clockHour; hd.style.background = clockMode === 'hour' ? accent : surf2; hd.style.color = clockMode === 'hour' ? '#F1F1F5' : textCol; }
+  if (md) { md.textContent = String(clockMinute).padStart(2,'0'); md.style.background = clockMode === 'minute' ? accent : surf2; md.style.color = clockMode === 'minute' ? '#F1F1F5' : textCol; }
+  if (ab) { ab.style.background = clockAmPm === 'AM' ? accent : surf2; ab.style.color = clockAmPm === 'AM' ? '#F1F1F5' : textCol; }
+  if (pb) { pb.style.background = clockAmPm === 'PM' ? accent : surf2; pb.style.color = clockAmPm === 'PM' ? '#F1F1F5' : textCol; }
+  if (ht) ht.textContent = clockMode === 'hour' ? 'Tap an hour' : 'Tap a minute';
+}
+
+function applyClockTime() {
+  const h24 = to24(clockHour, clockAmPm);
+  const val24 = `${String(h24).padStart(2,'0')}:${String(clockMinute).padStart(2,'0')}`;
+  const display = fmt12(clockHour, clockMinute, clockAmPm);
+  const hiddenId = clockTargetId === 'cal' ? 'cal-time' : clockTargetId === 'confirm' ? 'confirm-time' : 'modal-cal-time';
+  const btnId    = clockTargetId === 'cal' ? 'cal-time-btn' : clockTargetId === 'confirm' ? 'confirm-time-btn' : 'modal-cal-time-btn';
+  document.getElementById(hiddenId).value = val24;
+  const btn = document.getElementById(btnId);
+  if (btn) btn.textContent = display;
+  document.getElementById('clock-modal').classList.add('hidden');
+  if (clockTargetId === 'cal') refreshSmsSuggestion();
+}
+
+const fieldLinkFns = {
+  name:    v => v,
+  email:   v => `<a href="mailto:${v}">${v}</a>`,
+  phone:   v => `<a href="tel:${v}">${v}</a>`,
+  website: v => { const u = v.startsWith('http') ? v : 'https://'+v; return `<a href="${u}" target="_blank">${v}</a>`; }
+};
+const fieldPlaceholders = {
+  name: 'Enter name…', email: 'Enter email…',
+  phone: 'Enter phone…', website: 'Enter website…'
+};
+
+function editPhoneField(i) {
+  const row = document.getElementById(`row-phone-${i}`);
+  const p = currentData.phones[i];
+  const typeLabel = p.type.charAt(0).toUpperCase() + p.type.slice(1);
+  row.innerHTML = `
+    <span class="field-label">${typeLabel}</span>
+    <input class="field-input" id="field-phone-${i}-input" value="${p.number}"
+      placeholder="Enter phone…" onkeydown="if(event.key==='Enter') savePhoneField(${i})">
+    <button class="save-chip" onclick="savePhoneField(${i})">Save</button>`;
+  document.getElementById(`field-phone-${i}-input`).focus();
+}
+
+function savePhoneField(i) {
+  const input = document.getElementById(`field-phone-${i}-input`);
+  if (!input) return;
+  const val = formatPhone(input.value.trim());
+  if (!currentData.phones[i]) currentData.phones[i] = { type: 'office', number: '' };
+  currentData.phones[i].number = val;
+  const p = currentData.phones[i];
+  const typeLabel = p.type.charAt(0).toUpperCase() + p.type.slice(1);
+  const row = document.getElementById(`row-phone-${i}`);
+  if (val) {
+    row.innerHTML = `
+      <span class="field-label">${typeLabel}</span>
+      <span class="field-value" id="field-phone-${i}-display"><a href="tel:${val}">${val}</a></span>
+      <button class="edit-chip" onclick="editPhoneField(${i})">Edit</button>`;
+  } else {
+    row.innerHTML = `
+      <span class="field-label">${typeLabel}</span>
+      <input class="field-input" id="field-phone-${i}-input" placeholder="Enter phone…"
+        onkeydown="if(event.key==='Enter') savePhoneField(${i})">
+      <button class="save-chip" onclick="savePhoneField(${i})">Save</button>`;
+  }
+  updatePhoneChips();
+}
+
+function updatePhoneChips() {
+  const phones = (currentData && currentData.phones) || [];
+  const hasEmail = !!(currentData && currentData.email);
+  const chipWrap = document.getElementById('contact-send-chips');
+  if (!chipWrap) return;
+
+  // Only include phones that actually have a number
+  const populated = phones.filter(p => p.number);
+
+  // Build phone chips — use type label if we have more than one number, else just "Phone"
+  const useLabels = populated.length > 1;
+  const phoneChips = populated.map((p, i) => {
+    const idx = phones.indexOf(p);
+    const label = useLabels
+      ? p.type.charAt(0).toUpperCase() + p.type.slice(1)
+      : 'Phone';
+    return `<button class="invite-chip" data-invite="phone-${idx}" onclick="toggleInvite('phone-${idx}')">${label}</button>`;
+  });
+
+  // Always include email chip, dimmed if no email
+  const emailChip = `<button class="invite-chip${hasEmail ? '' : ' dimmed'}" id="chip-email" data-invite="email" onclick="toggleInvite('email')">E-mail</button>`;
+
+  // If no phones at all, show a dimmed generic Phone chip so the row isn't empty
+  if (populated.length === 0) {
+    chipWrap.innerHTML = `<button class="invite-chip dimmed" id="chip-phone" data-invite="phone-0">Phone</button>${emailChip}`;
+  } else {
+    chipWrap.innerHTML = phoneChips.join('') + emailChip;
+  }
+}
+
+function editField(key) {
+  const row = document.getElementById(`row-${key}`);
+  const displayEl = document.getElementById(`field-${key}-display`);
+  const currentVal = currentData[key] || '';
+  // Swap display + edit chip for input + save chip
+  displayEl.outerHTML = `<input class="field-input" id="field-${key}-input"
+    value="${currentVal}" placeholder="${fieldPlaceholders[key] || ''}"
+    onkeydown="if(event.key==='Enter') saveField('${key}')">`;
+  row.querySelector('.edit-chip').outerHTML =
+    `<button class="save-chip" onclick="saveField('${key}')">Save</button>`;
+  document.getElementById(`field-${key}-input`).focus();
+}
+
+function saveField(key) {
+  const input = document.getElementById(`field-${key}-input`);
+  if (!input) return;
+  let val = input.value.trim();
+  if (key === 'phone' && val) val = formatPhone(val);
+  currentData[key] = val;
+
+  const row = document.getElementById(`row-${key}`);
+  const linkFn = fieldLinkFns[key] || (v => v);
+  if (val) {
+    input.outerHTML = `<span class="field-value" id="field-${key}-display">${linkFn(val)}</span>`;
+    row.querySelector('.save-chip').outerHTML =
+      `<button class="edit-chip" onclick="editField('${key}')">Edit</button>`;
+  } else {
+    input.outerHTML = `<input class="field-input" id="field-${key}-input"
+      placeholder="${fieldPlaceholders[key] || ''}"
+      onkeydown="if(event.key==='Enter') saveField('${key}')">`;
+  }
+
+  // Re-evaluate chip dimming after edit
+  const phoneChip = document.getElementById('chip-phone');
+  const emailChip = document.getElementById('chip-email');
+  if (phoneChip) phoneChip.classList.toggle('dimmed', !currentData.phone);
+  if (emailChip) emailChip.classList.toggle('dimmed', !currentData.email);
+
+  // Update header name if name was edited
+  if (key === 'name') {
+    document.getElementById('res-name').textContent = val || '—';
+    document.getElementById('avatar').textContent = initials(val);
+    const firstName = val.trim().split(/\s+/)[0];
+    const contactLabel = document.getElementById('contact-toggle-label');
+    if (contactLabel) contactLabel.textContent = firstName || 'Contact';
+  }
+}
+/* ─── Mini calendar ─────────────────────────────────── */
+let miniCalYear = null;
+let miniCalMonth = null;
+
+function renderMiniCal(year, month) {
+  miniCalYear = year;
+  miniCalMonth = month;
+
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const todayStr = today.toISOString().split('T')[0];
+  const suggestedStr = pendingFollowUpDate;
+
+  const monthNames = ['January','February','March','April','May','June',
+                      'July','August','September','October','November','December'];
+  document.getElementById('mini-cal-title').textContent = `${monthNames[month]} ${year}`;
+
+  const grid = document.getElementById('mini-cal-grid');
+  grid.innerHTML = '';
+
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  // Blank cells before first day
+  for (let i = 0; i < firstDay; i++) {
+    grid.appendChild(Object.assign(document.createElement('div'), {}));
+  }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isToday = dateStr === todayStr;
+    const isSuggested = dateStr === suggestedStr;
+
+    const cell = document.createElement('div');
+    cell.textContent = d;
+    cell.style.cssText = `
+      padding:5px 2px;border-radius:50%;font-size:13px;cursor:pointer;
+      font-family:'DM Sans',sans-serif;transition:background 0.1s;
+      ${isSuggested
+        ? `background:var(--accent);color:#F1F1F5;font-weight:600;`
+        : isToday
+          ? `color:var(--muted);font-size:11px;`
+          : `color:var(--text);`}
+    `;
+    cell.addEventListener('click', () => {
+      pendingFollowUpDate = dateStr;
+      renderMiniCal(year, month);
+    });
+    if (!isSuggested) {
+      cell.addEventListener('mouseover', () => { if(dateStr !== suggestedStr) cell.style.background = 'var(--border)'; });
+      cell.addEventListener('mouseout', () => { if(dateStr !== suggestedStr) cell.style.background = ''; });
+    }
+    grid.appendChild(cell);
+  }
+}
+
+function miniCalNav(dir) {
+  let m = miniCalMonth + dir;
+  let y = miniCalYear;
+  if (m > 11) { m = 0; y++; }
+  if (m < 0) { m = 11; y--; }
+  renderMiniCal(y, m);
+}
+
+/* ─── Polish notes ──────────────────────────────────── */
+async function polishNotes() {
+  const raw = document.getElementById('notes-field').value.trim();
+  if (!raw) { showToast('Add some notes first'); return; }
+
+  const modal = document.getElementById('polish-modal');
+  const ta = document.getElementById('polish-textarea');
+  const badge = document.getElementById('polish-generating');
+  const useBtn = document.getElementById('polish-use-btn');
+
+  ta.value = '';
+  ta.placeholder = 'Polishing your notes…';
+  badge.style.display = 'flex';
+  useBtn.disabled = true;
+  modal.classList.remove('hidden');
+
+  try {
+    const res = await fetch(`${API}/polish-notes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ notes: raw, contact: currentData })
+    });
+    if (!res.ok) throw new Error(`Server error ${res.status}`);
+    const data = await res.json();
+    ta.value = data.polished || '';
+    ta.placeholder = '';
+  } catch (err) {
+    ta.placeholder = 'Could not polish notes. Try again.';
+    showToast('Error: ' + err.message);
+  } finally {
+    badge.style.display = 'none';
+    useBtn.disabled = false;
+  }
+}
+
+function usePolishedNotes() {
+  const polished = document.getElementById('polish-textarea').value.trim();
+  if (!polished) return;
+  document.getElementById('notes-field').value = polished;
+  document.getElementById('polish-modal').classList.add('hidden');
+  scheduleTextSuggestion();
+  showToast('Notes updated ✓');
+}
+
+/* ─── Manual entry ──────────────────────────────────── */
+function openManualEntry() {
+  // Clear previous values
+  ['name','title','company','phone','email','website'].forEach(f => {
+    document.getElementById(`manual-${f}`).value = '';
+  });
+  document.getElementById('manual-entry-modal').classList.remove('hidden');
+  setTimeout(() => document.getElementById('manual-name').focus(), 100);
+}
+
+function submitManualEntry() {
+  const name    = document.getElementById('manual-name').value.trim();
+  const title   = document.getElementById('manual-title').value.trim();
+  const company = document.getElementById('manual-company').value.trim();
+  const phone   = document.getElementById('manual-phone').value.trim();
+  const email   = document.getElementById('manual-email').value.trim();
+  const website = document.getElementById('manual-website').value.trim();
+
+  if (!name && !phone && !email) {
+    showToast('Please enter at least a name, phone, or email');
+    return;
+  }
+
+  const phones = phone ? [{ type: 'cell', number: formatPhone(phone) }] : [];
+  const data = { name, title, company, email, phones, website };
+
+  document.getElementById('manual-entry-modal').classList.add('hidden');
+  uploadArea.style.display = 'none';
+  document.getElementById('meeting-date-row').style.display = 'block';
+  setMeetingDate('today');
+  currentData = data;
+  showResult(data);
+}
+
+/* ─── SMS text message ─────────────────────────────── */
+let textSuggestionTimer = null;
+
+function scheduleTextSuggestion() {
+  const body = document.getElementById('sms-body');
+  const count = document.getElementById('sms-char-count');
+  if (body && count) count.textContent = `${body.value.length} / 160`;
+  clearTimeout(textSuggestionTimer);
+  const notes = document.getElementById('notes-field').value.trim();
+  if (!notes || notes.length < 10) return;
+  textSuggestionTimer = setTimeout(async () => {
+    const resolvedDate = await extractDateFromNotes(notes);
+    generateTextSuggestion(notes, resolvedDate);
+  }, 1500);
+}
+
+async function extractDateFromNotes(notes) {
+  try {
+    const res = await fetch(`${API}/extract-date`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ notes, meetingDate })
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data.followUpDate) {
+      // Update the calendar date/time
+      document.getElementById('cal-date').value = data.followUpDate;
+      if (data.followUpTime) {
+        document.getElementById('cal-time').value = data.followUpTime;
+        const [h24, m] = data.followUpTime.split(':').map(Number);
+        const { h, ap } = from24(h24);
+        const btn = document.getElementById('cal-time-btn');
+        if (btn) btn.textContent = fmt12(h, m, ap);
+      }
+      // Return formatted date string for SMS use
+      const d = new Date(data.followUpDate + 'T12:00:00');
+      return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    }
+  } catch { /* silent */ }
+  // Fall back to whatever is in the calendar date picker
+  const calDate = document.getElementById('cal-date').value;
+  if (calDate) {
+    const d = new Date(calDate + 'T12:00:00');
+    return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  }
+  return null;
+}
+
+async function generateTextSuggestion(notes, fallbackDate) {
+  const body = document.getElementById('sms-body');
+  if (!body) return;
+  body.placeholder = 'Generating suggestion…';
+
+  // If no date passed in, read from cal-date as last resort
+  if (!fallbackDate) {
+    const calDate = document.getElementById('cal-date').value || null;
+    if (calDate) {
+      const d = new Date(calDate + 'T12:00:00');
+      fallbackDate = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    }
+  }
+
+  try {
+    const res = await fetch(`${API}/generate-text`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contact: currentData, notes, fallbackDate })
+    });
+    if (!res.ok) throw new Error(`Server error ${res.status}`);
+    const data = await res.json();
+    if (data.message) {
+      body.value = data.message;
+      const count = document.getElementById('sms-char-count');
+      if (count) count.textContent = `${data.message.length} / 160`;
+    }
+  } catch (err) {
+    body.placeholder = 'Enter your message…';
+  }
+}
+
+function initSmsPhoneChips() {
+  const phones = (currentData && currentData.phones) || [];
+  const populated = phones.filter(p => p.number);
+  const row = document.getElementById('sms-phone-row');
+  const chipsEl = document.getElementById('sms-phone-chips');
+  if (!row || !chipsEl) return;
+
+  // Default to cell number if available, otherwise first populated phone
+  const cellIdx = phones.findIndex(p => p.number && p.type === 'cell');
+  const defaultPhone = cellIdx !== -1 ? phones[cellIdx] : populated[0];
+  selectedSmsPhoneIdx = defaultPhone ? phones.indexOf(defaultPhone) : 0;
+
+  if (populated.length <= 1) {
+    row.style.display = 'none';
+  } else {
+    chipsEl.innerHTML = populated.map((p, i) => {
+      const idx = phones.indexOf(p);
+      const label = p.type.charAt(0).toUpperCase() + p.type.slice(1);
+      const isDefault = idx === selectedSmsPhoneIdx;
+      return `<button class="invite-chip${isDefault ? ' active' : ''}" id="sms-chip-${idx}"
+        onclick="setSmsPhone(${idx})">${label}</button>`;
+    }).join('');
+    row.style.display = 'block';
+  }
+}
+
+let selectedSmsPhoneIdx = 0;
+function setSmsPhone(idx) {
+  selectedSmsPhoneIdx = idx;
+  document.querySelectorAll('[id^="sms-chip-"]').forEach(c => c.classList.remove('active'));
+  const chip = document.getElementById(`sms-chip-${idx}`);
+  if (chip) chip.classList.add('active');
+}
+
+function openInMessagesApp() {
+  const body = document.getElementById('sms-body').value.trim();
+  if (!body) { showToast('Please enter a message first'); return; }
+  const phones = (currentData && currentData.phones) || [];
+  const phone = phones[selectedSmsPhoneIdx];
+  const number = phone ? phone.number.replace(/\D/g, '') : '';
+  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const smsUri = number
+    ? `sms:${number}${isIOS ? '&' : '?'}body=${encodeURIComponent(body)}`
+    : `sms:?body=${encodeURIComponent(body)}`;
+  window.location.href = smsUri;
+}
+
 function createCalendarEvent() {
   if (!currentData) return;
   const name = currentData.name || 'Contact';
@@ -827,7 +2115,8 @@ function createCalendarEvent() {
   const endStr = fmt(end);
 
   const notes = document.getElementById('notes-field').value.trim();
-  let description = notes ? `Conversation notes:\n${notes}` : '';
+  const includeNotes = document.getElementById('include-notes-toggle').checked;
+  let description = (includeNotes && notes) ? `Conversation notes:\n${notes}` : '';
   if (emailDraftText) description += (description ? '\n\n' : '') + `Suggested follow-up email:\n${emailDraftText}`;
 
   // Build attendees
@@ -836,8 +2125,13 @@ function createCalendarEvent() {
   if (contactOn && selectedInvite.has('email') && currentData.email) {
     attendeeLines.push(`ATTENDEE;RSVP=TRUE:mailto:${currentData.email}`);
   }
-  if (contactOn && selectedInvite.has('phone') && currentData.phone) {
-    description += `\n\nInvite SMS to: ${currentData.phone}`;
+  // Handle phone-N invite selections
+  if (contactOn && currentData.phones) {
+    currentData.phones.forEach((p, i) => {
+      if (selectedInvite.has(`phone-${i}`) && p.number) {
+        description += `\n\nInvite SMS to (${p.type}): ${p.number}`;
+      }
+    });
   }
   if (selectedInvite.has('other') || document.getElementById('team-toggle').checked) {
     const otherVal = document.getElementById('invite-other-input').value.trim();
@@ -904,7 +2198,10 @@ async function generateEmailDraft() {
         contact: currentData,
         notes,
         paragraphs: selectedParaCount,
-        tone: selectedTone
+        tone: selectedTone,
+        followUpDate: document.getElementById('cal-date').value || null,
+        followUpTime: document.getElementById('cal-time').value || null,
+        meetingDate
       })
     });
 
@@ -912,14 +2209,264 @@ async function generateEmailDraft() {
     const data = await res.json();
     if (data.error) throw new Error(data.error);
     emailDraftText = data.email || '';
-    document.getElementById('email-draft-content').textContent = emailDraftText;
+
+    const flags = data.flags || [];
+    const phrases = data.phrases || [];
+    renderEmailDraft(emailDraftText, flags, phrases);
+
     document.getElementById('email-modal').classList.remove('hidden');
+
+    // If a follow-up date was detected, ask the user to confirm before setting
+    if (data.followUpDate) {
+      pendingFollowUpDate = data.followUpDate;
+      pendingFollowUpTime = data.followUpTime || null;
+
+      // Render mini calendar on the suggested date's month
+      const [y, m] = data.followUpDate.split('-').map(Number);
+      renderMiniCal(y, m - 1);
+
+      const timeRow = document.getElementById('time-confirm-row');
+      if (data.followUpTime) {
+        const [h24, min] = data.followUpTime.split(':').map(Number);
+        const ampm = h24 >= 12 ? 'PM' : 'AM';
+        const h12 = h24 % 12 || 12;
+        const display = `${h12}:${String(min).padStart(2,'0')} ${ampm}`;
+        document.getElementById('confirm-time').value = data.followUpTime;
+        document.getElementById('confirm-time-btn').textContent = display;
+        if (timeRow) timeRow.style.display = 'block';
+        document.getElementById('date-confirm-subtitle').textContent =
+          'A date and time were mentioned in your notes. Does this look right?';
+      } else {
+        document.getElementById('confirm-time').value = '13:00';
+        document.getElementById('confirm-time-btn').textContent = '1:00 PM';
+        if (timeRow) timeRow.style.display = 'none';
+        document.getElementById('date-confirm-subtitle').textContent =
+          'A date was mentioned in your notes. Does this look right?';
+      }
+
+      setTimeout(() => {
+        document.getElementById('date-confirm-modal').classList.remove('hidden');
+      }, 400);
+    }
   } catch (err) {
     showToast('Could not generate email: ' + err.message);
   } finally {
     btn.disabled = false;
     btn.innerHTML = 'Generate follow-up email';
   }
+}
+
+function confirmFollowUpDate() {
+  if (pendingFollowUpDate) {
+    const confirmedDate = pendingFollowUpDate;
+    // Use time from the interactive clock button in the modal
+    const confirmedTime = document.getElementById('confirm-time').value || pendingFollowUpTime || null;
+
+    document.getElementById('cal-date').value = confirmedDate;
+    if (confirmedTime) {
+      document.getElementById('cal-time').value = confirmedTime;
+      const [h24, m] = confirmedTime.split(':').map(Number);
+      const { h, ap } = from24(h24);
+      const calBtn = document.getElementById('cal-time-btn');
+      if (calBtn) calBtn.textContent = fmt12(h, m, ap);
+    }
+
+    pendingFollowUpDate = null;
+    pendingFollowUpTime = null;
+
+    showToast('Follow-up date & time updated ✓');
+    refreshSmsSuggestion();
+
+    if (emailDraftText) {
+      silentlyRegenerateEmail(confirmedDate, confirmedTime);
+    }
+  }
+  document.getElementById('date-confirm-modal').classList.add('hidden');
+}
+
+async function silentlyRegenerateEmail(followUpDate, followUpTime) {
+  const notes = document.getElementById('notes-field').value.trim();
+  if (!notes) return;
+
+  const draftEl = document.getElementById('email-draft-content');
+  if (draftEl) draftEl.style.opacity = '0.4';
+
+  try {
+    const res = await fetch(`${API}/generate-email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contact: currentData,
+        notes,
+        paragraphs: selectedParaCount,
+        tone: selectedTone,
+        followUpDate: followUpDate || null,
+        followUpTime: followUpTime || null,
+        meetingDate
+      })
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.email) {
+      emailDraftText = data.email;
+      renderEmailDraft(emailDraftText, data.flags || [], data.phrases || []);
+    }
+  } catch { /* silent — don't disrupt the user */ } finally {
+    if (draftEl) draftEl.style.opacity = '1';
+  }
+}
+
+function useDifferentDate() {
+  document.getElementById('date-confirm-modal').classList.add('hidden');
+  pendingFollowUpDate = null;
+  pendingFollowUpTime = null;
+  const currentDate = document.getElementById('cal-date').value;
+  const currentTime = document.getElementById('cal-time').value || '13:00';
+  document.getElementById('modal-cal-date').value = currentDate;
+  document.getElementById('modal-cal-time').value = currentTime;
+  const [h24, m] = currentTime.split(':').map(Number);
+  const { h, ap } = from24(h24);
+  const btn = document.getElementById('modal-cal-time-btn');
+  if (btn) btn.textContent = fmt12(h, m, ap);
+  document.getElementById('date-picker-modal').classList.remove('hidden');
+}
+
+function applyCustomDate() {
+  const date = document.getElementById('modal-cal-date').value;
+  const time = document.getElementById('modal-cal-time').value || '13:00';
+  if (!date) { showToast('Please pick a date first'); return; }
+  document.getElementById('cal-date').value = date;
+  document.getElementById('cal-time').value = time;
+  const [h24, m] = time.split(':').map(Number);
+  const { h, ap } = from24(h24);
+  const btn = document.getElementById('cal-time-btn');
+  if (btn) btn.textContent = fmt12(h, m, ap);
+  document.getElementById('date-picker-modal').classList.add('hidden');
+  showToast('Follow-up date & time updated ✓');
+  refreshSmsSuggestion();
+}
+
+function openEmailDatePicker() {
+  const currentDate = document.getElementById('cal-date').value;
+  const currentTime = document.getElementById('cal-time').value || '13:00';
+  document.getElementById('modal-cal-date').value = currentDate;
+  document.getElementById('modal-cal-time').value = currentTime;
+  const [h24, m] = currentTime.split(':').map(Number);
+  const { h, ap } = from24(h24);
+  const btn = document.getElementById('modal-cal-time-btn');
+  if (btn) btn.textContent = fmt12(h, m, ap);
+  document.getElementById('date-picker-modal').classList.remove('hidden');
+}
+
+function openInMailApp() {
+  if (!emailDraftText) return;
+  const to = (currentData && currentData.email) ? encodeURIComponent(currentData.email) : '';
+  const name = (currentData && currentData.name) ? currentData.name : '';
+  const subject = encodeURIComponent(name ? `${name} follow-up` : 'Follow-up');
+
+  // mailto body is limited to ~1900 chars to stay safe across OS/browsers
+  const LIMIT = 1900;
+  let body = emailDraftText;
+  let truncated = false;
+  if (body.length > LIMIT) {
+    body = body.slice(0, LIMIT) + '\n\n[continued...]';
+    truncated = true;
+  }
+
+  const notice = document.getElementById('mailto-truncate-notice');
+  if (notice) notice.style.display = truncated ? 'block' : 'none';
+
+  const mailto = `mailto:${to}?subject=${subject}&body=${encodeURIComponent(body)}`;
+  window.location.href = mailto;
+}
+
+function renderEmailDraft(text, flags, phrases) {
+  const draftEl = document.getElementById('email-draft-content');
+  const flagsEl = document.getElementById('email-flags');
+  const flagsList = document.getElementById('email-flags-list');
+  if (!draftEl) return;
+
+  if (flags && flags.length > 0) {
+    // Sort flags by the position their corresponding phrase appears in the email
+    const paired = flags.map((f, i) => ({ flag: f, phrase: (phrases || [])[i] || '' }));
+    paired.sort((a, b) => {
+      const posA = a.phrase ? text.toLowerCase().indexOf(a.phrase.toLowerCase()) : Infinity;
+      const posB = b.phrase ? text.toLowerCase().indexOf(b.phrase.toLowerCase()) : Infinity;
+      return posA - posB;
+    });
+    const sortedFlags = paired.map(p => p.flag);
+    const sortedPhrases = paired.map(p => p.phrase);
+
+    if (flagsList) flagsList.innerHTML = sortedFlags.map(f => `<li>${f}</li>`).join('');
+    if (flagsEl) flagsEl.style.display = 'block';
+
+    let html = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    sortedPhrases.forEach(phrase => {
+      if (!phrase) return;
+      const escaped = phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      html = html.replace(new RegExp(`(${escaped})`, 'gi'),
+        '<mark class="email-flag-highlight" title="May not match your notes">$1</mark>');
+    });
+    draftEl.innerHTML = html.replace(/\n/g, '<br>');
+  } else {
+    draftEl.textContent = text;
+    if (flagsEl) flagsEl.style.display = 'none';
+    if (flagsList) flagsList.innerHTML = '';
+  }
+}
+
+async function regenerateEmailDraft() {
+  const correction = document.getElementById('email-correction-input').value.trim();
+  if (!correction) { showToast('Add a correction first'); return; }
+
+  const btn = document.getElementById('regenerate-btn');
+  const icon = document.getElementById('regen-icon');
+  btn.disabled = true;
+  if (icon) icon.style.animation = 'spin 0.7s linear infinite';
+
+  const draftEl = document.getElementById('email-draft-content');
+  const previousDraft = emailDraftText;
+  draftEl.style.opacity = '0.4';
+
+  try {
+    const res = await fetch(`${API}/generate-email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contact: currentData,
+        notes: document.getElementById('notes-field').value.trim(),
+        paragraphs: selectedParaCount,
+        tone: selectedTone,
+        followUpDate: document.getElementById('cal-date').value || null,
+        followUpTime: document.getElementById('cal-time').value || null,
+        correction,
+        meetingDate
+      })
+    });
+    if (!res.ok) throw new Error(`Server error ${res.status}`);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    emailDraftText = data.email || '';
+    renderEmailDraft(emailDraftText, data.flags || [], data.phrases || []);
+    document.getElementById('email-correction-input').value = '';
+  } catch (err) {
+    emailDraftText = previousDraft;
+    showToast('Could not regenerate: ' + err.message);
+  } finally {
+    draftEl.style.opacity = '1';
+    btn.disabled = false;
+    const icon = document.getElementById('regen-icon');
+    if (icon) icon.style.animation = '';
+  }
+}
+
+function closeEmailModal() {
+  document.getElementById('email-modal').classList.add('hidden');
+  document.getElementById('email-correction-input').value = '';
+  const flagsEl = document.getElementById('email-flags');
+  if (flagsEl) flagsEl.style.display = 'none';
+  const flagsList = document.getElementById('email-flags-list');
+  if (flagsList) flagsList.innerHTML = '';
 }
 
 function copyEmailDraft() {
@@ -945,13 +2492,19 @@ function downloadVCard() {
   if (!currentData) return;
   const d = currentData;
   const notes = document.getElementById('notes-field').value.trim();
+
+  const typeMap = { office: 'WORK,VOICE', cell: 'CELL', fax: 'FAX', 'toll-free': 'WORK,VOICE', home: 'HOME,VOICE', other: 'VOICE' };
+  const phoneLines = (d.phones || [])
+    .filter(p => p.number)
+    .map(p => `TEL;TYPE=${typeMap[p.type] || 'VOICE'}:${p.number}`);
+
   const lines = [
     'BEGIN:VCARD', 'VERSION:3.0',
     `FN:${d.name || ''}`,
     d.title ? `TITLE:${d.title}` : '',
     d.company ? `ORG:${d.company}` : '',
     d.email ? `EMAIL:${d.email}` : '',
-    d.phone ? `TEL:${d.phone}` : '',
+    ...phoneLines,
     d.website ? `URL:${d.website.startsWith('http') ? d.website : 'https://' + d.website}` : '',
     notes ? `NOTE:${notes.replace(/\n/g, '\\n')}` : '',
     'END:VCARD'
@@ -967,6 +2520,9 @@ function downloadVCard() {
 function reset() {
   selectedFile = null; pendingQRText = null; pendingBase64 = null; pendingMediaType = null;
   emailDraftText = '';
+  pendingFollowUpDate = null;
+  pendingFollowUpTime = null;
+  pendingQRScanned = false;
   selectedParaCount = 3;
   selectedTone = 'professional';
   document.querySelectorAll('[data-para]').forEach(c => {
@@ -989,15 +2545,34 @@ function reset() {
   if (teamToggle) { teamToggle.checked = false; }
   document.getElementById('team-input-wrap').style.display = 'none';
   document.getElementById('invite-other-input').value = '';
+  const includeNotesToggle = document.getElementById('include-notes-toggle');
+  if (includeNotesToggle) includeNotesToggle.checked = true;
+  meetingDate = new Date().toISOString().split('T')[0];
+  document.getElementById('meeting-date-row').style.display = 'none';
+  setMeetingDate('today');
+  ['name','title','company','phone','email','website'].forEach(f => {
+    const el = document.getElementById(`manual-${f}`);
+    if (el) el.value = '';
+  });
   document.getElementById('file-camera').value = '';
   document.getElementById('file-library').value = '';
   document.getElementById('notes-field').value = '';
+  clearTimeout(textSuggestionTimer);
+  const smsBody = document.getElementById('sms-body');
+  if (smsBody) { smsBody.value = ''; smsBody.placeholder = 'Generating suggestion…'; }
+  const smsCount = document.getElementById('sms-char-count');
+  if (smsCount) smsCount.textContent = '0 / 160';
+  const smsPhoneRow = document.getElementById('sms-phone-row');
+  if (smsPhoneRow) smsPhoneRow.style.display = 'none';
+  selectedSmsPhoneIdx = 0;
   document.getElementById('gen-email-btn').innerHTML = 'Generate follow-up email';
   document.getElementById('gen-email-btn').disabled = false;
+  const correctionInput = document.getElementById('email-correction-input');
+  if (correctionInput) correctionInput.value = '';
   const calBtn = document.getElementById('cal-btn');
   calBtn.textContent = '📅 Add to calendar';
   calBtn.classList.add('primary'); calBtn.classList.remove('cal-created');
-  preview.style.display = 'none';
+  document.getElementById('preview-wrap').style.display = 'none';
   document.getElementById('retake-row').style.display = 'none';
   uploadArea.style.display = 'flex';
   scanBtn.style.display = 'none';
