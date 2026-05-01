@@ -1,6 +1,7 @@
-<!-- card-scanner v1.70.0 -->
+<!-- card-scanner v1.71.0 -->
 <!--
 CHANGELOG
+v1.71.0 - Email modal: Adjust date chip opens date picker; Date confirm modal: interactive clock button for time adjustment
 v1.70.0 - Email draft silently regenerates when follow-up date changes (calendar picker, clock, date confirm modal)
 v1.69.0 - vCard URL QR preview shows "Virtual Contact Card" instead of the raw URL
 v1.68.0 - Date confirm modal shows interactive mini calendar; vCard URL QR codes now fetched and parsed via /fetch-vcf
@@ -536,6 +537,14 @@ v1.1.0  - Version tracking and AI disclaimer added
         </button>
       </div>
     </div>
+    <div style="display:flex;justify-content:flex-end;margin-top:2px;">
+      <button onclick="openEmailDatePicker()" style="
+        padding:5px 12px;border-radius:20px;border:1px solid var(--border);
+        background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;
+        font-size:12px;cursor:pointer;transition:border-color 0.15s,color 0.15s;
+      " onmouseover="this.style.borderColor='var(--accent2)';this.style.color='var(--accent2)'"
+         onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">Adjust date</button>
+    </div>
     <div style="display:flex;gap:8px;margin-top:4px;">
       <button onclick="openInMailApp()" style="
         flex:1;padding:10px 8px;border-radius:var(--radius-sm);border:none;
@@ -584,7 +593,18 @@ v1.1.0  - Version tracking and AI disclaimer added
       <div id="mini-cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;margin-top:2px;"></div>
     </div>
 
-    <div id="time-confirm-display" style="font-size:14px;color:var(--text2);text-align:center;margin-top:-4px;"></div>
+    <div id="time-confirm-row" style="display:none;margin-top:4px;">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:5px;text-align:center;">Suggested time</div>
+      <button id="confirm-time-btn" onclick="openClock('confirm')" style="
+        width:100%;background:var(--surface2);border:1px solid var(--border);
+        border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;
+        font-size:14px;padding:10px 12px;text-align:center;cursor:pointer;
+        transition:border-color 0.15s;
+      " onmouseover="this.style.borderColor='var(--accent2)'" onmouseout="this.style.borderColor='var(--border)'">
+        1:00 PM
+      </button>
+      <input type="hidden" id="confirm-time" value="13:00">
+    </div>
 
     <button class="modal-btn primary" onclick="confirmFollowUpDate()">Use this date &amp; time</button>
     <button class="modal-btn cancel" onclick="document.getElementById('date-confirm-modal').classList.add('hidden')">No thank you</button>
@@ -1479,7 +1499,7 @@ function from24(h24) {
 
 function openClock(target) {
   clockTargetId = target;
-  const hiddenId = target === 'cal' ? 'cal-time' : 'modal-cal-time';
+  const hiddenId = target === 'cal' ? 'cal-time' : target === 'confirm' ? 'confirm-time' : 'modal-cal-time';
   const val = document.getElementById(hiddenId).value || '13:00';
   const [h24str, mstr] = val.split(':');
   const { h, ap } = from24(parseInt(h24str));
@@ -1606,8 +1626,8 @@ function applyClockTime() {
   const h24 = to24(clockHour, clockAmPm);
   const val24 = `${String(h24).padStart(2,'0')}:${String(clockMinute).padStart(2,'0')}`;
   const display = fmt12(clockHour, clockMinute, clockAmPm);
-  const hiddenId = clockTargetId === 'cal' ? 'cal-time' : 'modal-cal-time';
-  const btnId    = clockTargetId === 'cal' ? 'cal-time-btn' : 'modal-cal-time-btn';
+  const hiddenId = clockTargetId === 'cal' ? 'cal-time' : clockTargetId === 'confirm' ? 'confirm-time' : 'modal-cal-time';
+  const btnId    = clockTargetId === 'cal' ? 'cal-time-btn' : clockTargetId === 'confirm' ? 'confirm-time-btn' : 'modal-cal-time-btn';
   document.getElementById(hiddenId).value = val24;
   const btn = document.getElementById(btnId);
   if (btn) btn.textContent = display;
@@ -2098,17 +2118,21 @@ async function generateEmailDraft() {
       const [y, m] = data.followUpDate.split('-').map(Number);
       renderMiniCal(y, m - 1);
 
-      // Show time if detected
-      const timeDisplay = document.getElementById('time-confirm-display');
+      const timeRow = document.getElementById('time-confirm-row');
       if (data.followUpTime) {
         const [h24, min] = data.followUpTime.split(':').map(Number);
         const ampm = h24 >= 12 ? 'PM' : 'AM';
         const h12 = h24 % 12 || 12;
-        timeDisplay.textContent = `Suggested time: ${h12}:${String(min).padStart(2,'0')} ${ampm}`;
+        const display = `${h12}:${String(min).padStart(2,'0')} ${ampm}`;
+        document.getElementById('confirm-time').value = data.followUpTime;
+        document.getElementById('confirm-time-btn').textContent = display;
+        if (timeRow) timeRow.style.display = 'block';
         document.getElementById('date-confirm-subtitle').textContent =
           'A date and time were mentioned in your notes. Does this look right?';
       } else {
-        timeDisplay.textContent = '';
+        document.getElementById('confirm-time').value = '13:00';
+        document.getElementById('confirm-time-btn').textContent = '1:00 PM';
+        if (timeRow) timeRow.style.display = 'none';
         document.getElementById('date-confirm-subtitle').textContent =
           'A date was mentioned in your notes. Does this look right?';
       }
@@ -2128,7 +2152,8 @@ async function generateEmailDraft() {
 function confirmFollowUpDate() {
   if (pendingFollowUpDate) {
     const confirmedDate = pendingFollowUpDate;
-    const confirmedTime = pendingFollowUpTime;
+    // Use time from the interactive clock button in the modal
+    const confirmedTime = document.getElementById('confirm-time').value || pendingFollowUpTime || null;
 
     document.getElementById('cal-date').value = confirmedDate;
     if (confirmedTime) {
@@ -2145,7 +2170,6 @@ function confirmFollowUpDate() {
     showToast('Follow-up date & time updated ✓');
     refreshSmsSuggestion();
 
-    // Silently regenerate the email draft with the updated date if one already exists
     if (emailDraftText) {
       silentlyRegenerateEmail(confirmedDate, confirmedTime);
     }
@@ -2213,6 +2237,18 @@ function applyCustomDate() {
   document.getElementById('date-picker-modal').classList.add('hidden');
   showToast('Follow-up date & time updated ✓');
   refreshSmsSuggestion();
+}
+
+function openEmailDatePicker() {
+  const currentDate = document.getElementById('cal-date').value;
+  const currentTime = document.getElementById('cal-time').value || '13:00';
+  document.getElementById('modal-cal-date').value = currentDate;
+  document.getElementById('modal-cal-time').value = currentTime;
+  const [h24, m] = currentTime.split(':').map(Number);
+  const { h, ap } = from24(h24);
+  const btn = document.getElementById('modal-cal-time-btn');
+  if (btn) btn.textContent = fmt12(h, m, ap);
+  document.getElementById('date-picker-modal').classList.remove('hidden');
 }
 
 function openInMailApp() {
